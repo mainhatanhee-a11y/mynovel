@@ -3,12 +3,12 @@
   "use strict";
   var S=window.VN_STORY;
   if(!S){document.body.textContent="Không tải được story.js";return;}
-  var STORE="thien-menh-ngoai-truyen-v1";
+  var STORE="thien-menh-ngoai-truyen-v2";
   var $=function(id){return document.getElementById(id);};
   var scene=$("scene"), content=$("mainContent"), dialogue=$("dialogue");
   var timer=null, typing=false, fullText="", toastTimer=null, sound=false, audio=null;
   var saved;
-  function fresh(){return {phase:"title",queue:[],lineIndex:0,after:"",sequence:0,lastLogged:"",log:[],day:1,energy:120,contracts:[],activeHost:null,pendingHost:null,trust:{lieu:30,mac:30,ta:30},flags:{},eventDone:false};}
+  function fresh(){return {phase:"title",queue:[],lineIndex:0,after:"",sequence:0,lastLogged:"",log:[],day:1,energy:120,maxContracts:1,contracts:[],activeHost:null,pendingHost:null,trust:{lieu:30,mac:30,ta:30},flags:{},eventDone:false};}
   try{saved=JSON.parse(localStorage.getItem(STORE)||"null");}catch(e){saved=null;}
   var state=saved&&saved.phase&&Array.isArray(saved.contracts)&&saved.flags&&saved.trust?saved:fresh();
   function persist(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){/* storage disabled */}}
@@ -39,7 +39,7 @@
   function renderSide(){
     $("energyValue").innerHTML=state.energy+' <small>/ 200</small>';
     $("energyBar").style.width=Math.max(0,Math.min(100,state.energy/2))+"%";
-    $("contractCount").textContent=String(state.contracts.length).padStart(2,"0")+" / 02";
+    $("contractCount").textContent=String(state.contracts.length).padStart(2,"0")+" / "+String(state.maxContracts||1).padStart(2,"0");
     $("dayValue").textContent="NGÀY "+String(state.day).padStart(2,"0");
     $("hostPanelMarker").textContent=String(state.contracts.length).padStart(2,"0")+" ACTIVE";
     $("hostList").innerHTML=state.contracts.length?state.contracts.map(function(id){
@@ -51,9 +51,10 @@
   }
   function render(){
     clearInterval(timer);typing=false;
+    if(state.phase!=="hub"){document.body.classList.remove("show-status");$("panelToggle").setAttribute("aria-expanded","false");}
     renderSide();dialogue.classList.add("hidden");content.innerHTML="";
-    if(state.phase==="title"){bg("void");content.innerHTML='<div class="screen-card"><div class="ornament">✦ · ◈ · ✦</div><div class="micro">A MULTI-HOST CULTIVATION VISUAL NOVEL</div><h1 class="main-title">THIÊN MỆNH<br>NGOẠI TRUYỆN</h1><p class="sub-title">Ngươi không phải thiên mệnh chi tử. Ngươi là bàn tay vàng trong đầu những người khác. Nhưng trước tiên... ngươi phải nhớ lại mình là ai.</p><div class="divider-gold"></div><div class="button-stack"><button class="primary-btn" data-action="start">THỨC TỈNH HỆ THỐNG <span>↗</span></button><button class="secondary-btn" data-action="archive">XEM BẢN GHI NGUYÊN TÁC <span>▤</span></button></div><p class="choice-caption">Bản demo: chương mở màn, nhiều ký chủ, sự kiện giao thoa và lưu cục bộ.</p></div>';return;}
-    if(state.phase==="dialogue"){var line=state.queue[state.lineIndex];if(!line){finishQueue();return;}bg(line.b||"hub",line.p);dialogue.classList.remove("hidden");$("speaker").textContent=line.s;$("lineCounter").textContent=String(state.lineIndex+1).padStart(2,"0")+" / "+String(state.queue.length).padStart(2,"0");$("dialogueHint").textContent="NHẤN ĐỂ TIẾP TỤC · SPACE ↵";type(line.t);var key=state.sequence+":"+state.lineIndex;if(state.lastLogged!==key){state.log.push({s:line.s,t:line.t});state.log=state.log.slice(-120);state.lastLogged=key;persist();}return;}
+    if(state.phase==="title"){bg("void");content.innerHTML='<div class="screen-card"><div class="ornament">✦ · ◈ · ✦</div><div class="micro">A MULTI-HOST CULTIVATION VISUAL NOVEL</div><h1 class="main-title">THIÊN MỆNH<br>NGOẠI TRUYỆN</h1><p class="sub-title">Ngươi không phải nhân vật chính. Ngươi là một hệ thống đã đánh mất nhiệm vụ của chính mình. Hãy nhớ lại. Rồi lựa chọn người đầu tiên sẽ nghe thấy giọng nói của ngươi.</p><div class="divider-gold"></div><div class="button-stack"><button class="primary-btn" data-action="start">THỨC TỈNH HỆ THỐNG <span>↗</span></button><button class="secondary-btn" data-action="archive">XEM BẢN GHI NGUYÊN TÁC <span>▤</span></button></div><p class="choice-caption">CHƯƠNG 00 · KÝ ỨC / KHẾ ƯỚC / THIÊN MỆNH.</p></div>';return;}
+    if(state.phase==="dialogue"){var line=state.queue[state.lineIndex];if(!line){finishQueue();return;}bg(line.b||"hub",line.p);dialogue.classList.remove("hidden");dialogue.dataset.voice=line.s==="HỆ THỐNG"?"system":line.s==="KÝ ỨC"?"memory":line.s==="DẪN TRUYỆN"?"narrator":"character";$("speaker").textContent=line.s;$("lineCounter").textContent=String(state.lineIndex+1).padStart(2,"0")+" / "+String(state.queue.length).padStart(2,"0");$("dialogueHint").textContent="NHẤN ĐỂ TIẾP TỤC · SPACE ↵";type(line.t);var key=state.sequence+":"+state.lineIndex;if(state.lastLogged!==key){state.log.push({s:line.s,t:line.t});state.log=state.log.slice(-120);state.lastLogged=key;persist();}return;}
     if(state.phase==="selection"){renderSelection();return;}
     if(state.phase==="contact-choice"){renderContactChoice();return;}
     if(state.phase==="contract-prompt"){renderContractPrompt();return;}
@@ -70,22 +71,60 @@
   function start(){state=fresh();runLines(S.intro,"selection");}
   function renderSelection(){
     bg("world");$("scenePortrait").innerHTML="";
-    var cards=Object.keys(S.hosts).map(function(id){var h=S.hosts[id],chosen=state.contracts.indexOf(id)>=0;return '<button class="candidate'+(chosen?' selected':'')+'" data-action="contact" data-host="'+id+'" '+(chosen||state.contracts.length>=2?'disabled':'')+'><div class="candidate-portrait">'+portrait(id)+'</div><div class="candidate-body"><strong>'+esc(h.name)+'</strong><small>'+esc(h.realm)+'</small><small>'+esc(h.role)+'</small><em>'+(chosen?'ĐÃ KÝ KHẾ ƯỚC':'QUAN SÁT / LIÊN LẠC →')+'</em></div></button>';}).join("");
-    content.innerHTML='<div class="screen-card wide"><div class="micro">HOST DETECTION / 03 MATCHES</div><h2 class="screen-heading">Ai sẽ trở thành ký chủ của ngươi?</h2><p class="screen-description">Mỗi người có đời sống, mục tiêu và cách đối thoại riêng. Ngươi có thể liên hệ tối đa hai người trong giai đoạn đầu.</p><div class="selection-grid">'+cards+'</div><div class="info-strip">◈ KHẾ ƯỚC: '+state.contracts.length+'/2 &nbsp; · &nbsp; Bản nguyên tác không ghi lại mọi chi tiết đời sống của họ.</div><button class="secondary-btn" data-action="hub">← '+(state.contracts.length?'TRỞ VỀ TRUNG TÂM':'TẠM BỎ QUA LỰA CHỌN')+'</button></div>';
+    var max=state.maxContracts||1,first=max===1;
+    var cards=Object.keys(S.hosts).map(function(id){
+      var h=S.hosts[id],chosen=state.contracts.indexOf(id)>=0;
+      return '<button class="candidate'+(chosen?' selected':'')+'" data-action="contact" data-host="'+id+'" '+(chosen||state.contracts.length>=max?'disabled':'')+'><div class="candidate-portrait">'+portrait(id)+'</div><div class="candidate-body"><strong>'+esc(h.name)+'</strong><small>'+esc(h.realm)+'</small><small>'+esc(h.role)+'</small><em>'+(chosen?'ĐÃ KÝ KHẾ ƯỚC':'KẾT NỐI →')+'</em></div></button>';
+    }).join("");
+    content.innerHTML='<div class="screen-card wide"><div class="micro">CHƯƠNG 00 / KHẾ ƯỚC</div><h2 class="screen-heading">'+(first?'Chỉ có thể chọn một người.':'Một cánh cửa khác vừa mở ra.')+'</h2><p class="screen-description">'+(first?'Ba cuộc đời. Ba con đường. Hãy lắng nghe họ trước khi trao khế ước đầu tiên. Người không được chọn vẫn tiếp tục sống trong thế giới này.':'Ký ức về quyền hạn thứ hai đã trở lại. Ngươi có thể tiếp tục đồng hành với một người, hoặc thử liên hệ thêm một ký chủ.')+'</p><div class="selection-grid">'+cards+'</div><div class="info-strip">'+(first?'◈ QUYỀN HẠN HIỆN TẠI: <b>01 KHẾ ƯỚC</b> · Một mình ngươi không thể bắt người khác đồng ý.':'◈ KẾT NỐI: '+state.contracts.length+'/'+max+' · Các ký chủ không tự biết về những khế ước khác.')+'</div><button class="secondary-btn" data-action="hub">← TRỞ VỀ CÂU CHUYỆN</button></div>';
   }
-  function contact(id){if(!S.hosts[id]||state.contracts.includes(id)||state.contracts.length>=2)return;state.pendingHost=id;runLines(S.hosts[id].intro,"contactChoice");}
+  function contact(id){if(!S.hosts[id]||state.contracts.includes(id)||state.contracts.length>=(state.maxContracts||1))return;state.pendingHost=id;runLines(S.hosts[id].intro,"contactChoice");}
   function renderContactChoice(){var id=state.pendingHost,h=S.hosts[id];if(!h){state.phase="selection";render();return;}bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);var html='<div class="screen-card wide"><div class="micro">CONNECTION REQUEST / '+esc(h.name)+'</div><h2 class="screen-heading">Ngươi sẽ nói gì?</h2><p class="screen-description">'+esc(h.desc)+'</p><div class="button-stack">';h.options.forEach(function(o,i){html+='<button class="choice-btn" data-action="reply" data-option="'+i+'" '+(state.energy+o.energy<0?'disabled':'')+'><span><span class="choice-number">0'+(i+1)+'.</span>'+esc(o.label)+'</span><span>›</span></button>';});html+='</div><button class="secondary-btn" style="margin-top:12px" data-action="defer">TẠM HOÃN LIÊN LẠC ↗</button></div>';content.innerHTML=html;}
-  function reply(i){var h=S.hosts[state.pendingHost],o=h&&h.options[i];if(!o)return;if(state.energy+o.energy<0){notify("Không đủ linh năng");return;}state.energy+=o.energy;state.trust[state.pendingHost]=Math.min(100,Math.max(0,state.trust[state.pendingHost]+o.trust));state.flags[o.flag]=true;runLines(o.reply,"contractPrompt");}
-  function renderContractPrompt(){var id=state.pendingHost,h=S.hosts[id];if(!h){state.phase="selection";render();return;}bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);content.innerHTML='<div class="screen-card"><div class="micro">CONTRACT PROTOCOL / CONSENT</div><h2 class="screen-heading">Đề nghị khế ước với '+esc(h.name)+'</h2><p class="screen-description">Khế ước cần sự chấp thuận của ký chủ. Người chơi có thể giữ bí mật về những khế ước khác, nhưng bí mật ấy có thể bị tự phát hiện.</p><div class="button-stack"><button class="primary-btn" data-action="sign">ĐỀ NGHỊ KÝ KHẾ ƯỚC <span>↗</span></button><button class="secondary-btn" data-action="defer">ĐỂ HỌ SUY NGHĨ THÊM <span>↗</span></button></div></div>';}
-  function sign(){var id=state.pendingHost;if(!id||state.contracts.includes(id)||state.contracts.length>=2)return;state.contracts.push(id);state.activeHost=id;state.pendingHost=null;state.flags["signed_"+id]=true;runLines(S.hosts[id].signed,"hub");}
+  function reply(i){
+    var id=state.pendingHost,h=S.hosts[id],o=h&&h.options[i];if(!o)return;
+    if(state.energy+o.energy<0){notify("Không đủ linh năng");return;}
+    state.energy+=o.energy;
+    state.trust[id]=Math.min(100,Math.max(0,state.trust[id]+o.trust));
+    state.flags[o.flag]=true;
+    var said={
+      lieu:[
+        "Ta là hệ thống bàn tay vàng. Ngươi không cần coi ta là sư phụ. Ta có thể giúp ngươi, nếu ngươi bằng lòng.",
+        "Ta có thể cho ngươi một cơ hội. Năm khối linh thạch này là lời chứng minh đầu tiên; ngươi không cần trả lại.",
+        "Ta biết ngươi đang thắc mắc. Nhưng thử đoán xem ta là ai?"
+      ],
+      mac:[
+        "Có linh thạch. Ta cho ngươi năm khối trước; còn khế ước, chúng ta sẽ nói rõ điều kiện.",
+        "Trong nguyên tác, bảy ngày nữa ngươi sẽ gặp tử kiếp. Ta biết nơi và người liên quan.",
+        "Không có. Hệ thống cũng nghèo như ngươi."
+      ],
+      ta:[
+        "Ta sở hữu một bản ghi toàn bộ nguyên tác của thế giới này. Ta có thể chia sẻ để cùng ngươi kiểm chứng.",
+        "Trong nguyên tác, ngươi sẽ hy sinh vì Thanh Vân Tông. Nhưng những trang sách chưa chắc là kết cục của ngươi.",
+        "Ta biết một loại trà ngươi chưa từng uống. Ngươi có muốn thử cùng ta không?"
+      ]
+    };
+    var b=id==="mac"?"market":id==="ta"?"mountain":"sect";
+    var speak={s:"HỆ THỐNG",t:said[id][i],b:b,p:id};
+    runLines([speak].concat(o.reply),"contractPrompt");
+  }
+  function renderContractPrompt(){var id=state.pendingHost,h=S.hosts[id];if(!h){state.phase="selection";render();return;}bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);content.innerHTML='<div class="screen-card"><div class="micro">CONTRACT PROTOCOL / CONSENT</div><h2 class="screen-heading">Đề nghị khế ước với '+esc(h.name)+'</h2><p class="screen-description">Khế ước chỉ hình thành nếu người kia chấp thuận. Một ký chủ sẽ không tự động biết những khế ước khác.</p><div class="button-stack"><button class="primary-btn" data-action="sign">ĐỀ NGHỊ KÝ KHẾ ƯỚC <span>↗</span></button><button class="secondary-btn" data-action="defer">ĐỂ HỌ SUY NGHĨ THÊM <span>↗</span></button></div></div>';}
+  function sign(){var id=state.pendingHost;if(!id||state.contracts.includes(id)||state.contracts.length>=(state.maxContracts||1))return;state.contracts.push(id);state.activeHost=id;state.pendingHost=null;state.flags["signed_"+id]=true;runLines(S.hosts[id].signed,"hub");}
   function defer(){state.pendingHost=null;state.phase=state.contracts.length?"hub":"selection";persist();render();}
   function renderHub(){
-    bg("hub",state.activeHost);var remaining=Math.max(0,8-state.day),selected=state.activeHost&&S.hosts[state.activeHost];
-    var tiles='<button class="hub-tile" data-action="talk" '+(!selected||state.flags.macDead&&state.activeHost==="mac"?'disabled':'')+'><i>☏</i><strong>LIÊN LẠC KÝ CHỦ</strong><small>'+(selected?esc(selected.name):'Chưa có ký chủ')+' · trò chuyện</small></button>';
-    tiles+='<button class="hub-tile" data-action="gift" '+(!selected||state.energy<12||state.flags.macDead&&state.activeHost==="mac"?'disabled':'')+'><i>✧</i><strong>BAN THƯỞNG</strong><small>Tiêu hao 12 linh năng · tăng tín nhiệm</small></button>';
-    tiles+='<button class="hub-tile" data-action="selection" '+(state.contracts.length>=2?'disabled':'')+'><i>♧</i><strong>TÌM KÝ CHỦ</strong><small>'+state.contracts.length+'/2 ô khế ước đã sử dụng</small></button>';
-    tiles+='<button class="hub-tile" data-action="archive"><i>▤</i><strong>THƯ VIỆN NGUYÊN TÁC</strong><small>Biết nội dung gốc · không toàn tri hiện tại</small></button>';
-    content.innerHTML='<div class="screen-card wide"><div class="micro">SYSTEM CONTROL / DAY '+String(state.day).padStart(2,"0")+'</div><h2 class="screen-heading">Không Gian Hệ Thống</h2><p class="screen-description">Ngươi có thể hỗ trợ nhiều ký chủ, nhưng mỗi người đều có lựa chọn và cuộc sống riêng. Lời hứa, bí mật và hành động của ngươi sẽ được thế giới ghi nhớ.</p><div class="hub-stats"><span class="hub-pill">◈ '+state.energy+' LINH NĂNG</span><span class="hub-pill">♧ '+state.contracts.length+' KHẾ ƯỚC</span><span class="hub-pill">◷ '+remaining+' NGÀY ĐẾN ĐẠI HỘI</span></div><div class="hub-tiles">'+tiles+'</div><div class="notice">'+(state.contracts.length===0?'Hiện chưa có ký chủ. Hãy tìm một người để mở các kênh liên lạc.':state.eventDone?'Sự kiện đại hội đã diễn ra. Bản demo kết thúc tại đây; các chương tiếp theo chưa được viết.':'Trước khi chuyển ngày, có thể nói chuyện hoặc ban thưởng cho ký chủ. Khi chuyển ngày, thế giới sẽ tiếp tục vận hành.')+'</div><div class="button-stack"><button class="primary-btn" data-action="advance" '+(state.contracts.length===0||state.eventDone?'disabled':'')+'>'+(state.day===7?'BƯỚC VÀO ĐẠI HỘI':'CHUYỂN SANG NGÀY TIẾP THEO')+' <span>↗</span></button></div></div>';
+    var id=state.activeHost,host=id&&S.hosts[id],remaining=Math.max(0,8-state.day),limit=state.maxContracts||1;
+    bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);
+    var refrain=host?"Giữa những trang sách đã được viết, "+host.name+" vẫn đang sống cuộc đời của mình. Ngươi có muốn nghe xem hôm nay đã xảy ra chuyện gì không?":"Một thế giới đang vận hành ngoài tầm mắt. Trước tiên, hãy lắng nghe một người.";
+    var title=state.day===1?"Khế ước đầu tiên":state.day<7?"Những ngày trước đại hội":state.day===7?"Đêm trước Đại Hội Vấn Đạo":"Người đáng lẽ phải chết";
+    var c='<div class="screen-card wide"><div class="micro">NGÀY '+String(state.day).padStart(2,"0")+' / CHƯƠNG 01 · THƯƠNG HUYỀN GIỚI</div><h2 class="screen-heading">'+title+'</h2><p class="screen-description">'+esc(refrain)+'</p>';
+    if(host)c+='<div class="info-strip">◈ ĐANG KẾT NỐI: <b>'+esc(host.name)+'</b> · '+esc(host.place)+' · '+(state.flags.macDead&&id==="mac"?'KHẾ ƯỚC ĐÃ CHẤM DỨT':'KHẾ ƯỚC ỔN ĐỊNH')+'</div>';
+    c+='<div class="button-stack">';
+    c+='<button class="choice-btn" data-action="talk" '+(!host||state.flags.macDead&&id==="mac"?'disabled':'')+'><span><span class="choice-number">01</span> Lắng nghe ký chủ hôm nay</span><span>›</span></button>';
+    c+='<button class="choice-btn" data-action="gift" '+(!host||state.energy<12||state.flags.macDead&&id==="mac"?'disabled':'')+'><span><span class="choice-number">02</span> Gửi một phần cơ duyên <small style="color:#9ebcaf">(−12 linh năng)</small></span><span>›</span></button>';
+    c+='<button class="choice-btn" data-action="archive"><span><span class="choice-number">03</span> Mở những trang nguyên tác</span><span>›</span></button>';
+    if(state.contracts.length<limit)c+='<button class="choice-btn" data-action="selection"><span><span class="choice-number">04</span> '+(state.contracts.length?'Tìm khế ước tiếp theo':'Tìm ký chủ đầu tiên')+'</span><span>›</span></button>';
+    c+='</div><div class="notice">'+(state.eventDone?'Chương demo đã kết thúc tại Đại Hội Vấn Đạo. Kết cục của những người còn lại vẫn chờ được viết.':state.day<4?'◷ Còn '+remaining+' ngày trước Đại Hội Vấn Đạo. Dòng thời gian chỉ tiến khi ngươi lựa chọn.':state.contracts.length<2?'◈ Một quyền hạn mới đã thức tỉnh. Ngươi có thể ký thêm một người, hoặc tiếp tục chỉ với ký chủ hiện tại.':'◈ Hai khế ước đang cùng tồn tại trong một thế giới. Mọi lựa chọn đều có thể giao nhau.')+'</div>';
+    c+='<div class="button-stack"><button class="primary-btn" data-action="advance" '+(state.contracts.length===0||state.eventDone?'disabled':'')+'>'+(state.day===7?'BƯỚC VÀO ĐẠI HỘI':state.eventDone?'CHƯƠNG NÀY ĐÃ KẾT THÚC':'KHÉP LẠI NGÀY NÀY')+' <span>↗</span></button></div></div>';
+    content.innerHTML=c;
   }
   function talk(){var id=state.activeHost;if(!id||state.flags.macDead&&id==="mac")return;var h=S.hosts[id];runLines([h.talk[(state.day+state.trust[id])%h.talk.length]],"hub");}
   function gift(){var id=state.activeHost;if(!id||state.energy<12){notify("Không đủ linh năng hoặc chưa chọn ký chủ");return;}if(state.flags.macDead&&id==="mac")return;state.energy-=12;state.trust[id]=Math.min(100,state.trust[id]+5);runLines(S.hosts[id].gift,"hub");}
@@ -96,24 +135,31 @@
     state.day++;state.energy=Math.min(200,state.energy+18);
     var lines,after="hub";
     if(state.day===8){lines=S.daily[7].slice();after="eventChoice";}
-    else if(state.day===7){lines=[{s:"DẪN TRUYỆN",t:"Đêm cuối trước đại hội, những chiếc đèn lồng cháy suốt dọc con đường Thanh Vân Sơn. Ai cũng có điều muốn đạt được vào ngày mai.",b:"sect"},{s:"HỆ THỐNG",t:"[Đại Hội Vấn Đạo còn 1 ngày.] [Hãy cân nhắc cảnh báo ký chủ có nguy cơ tử kiếp.]",b:"sect"}];}
-    else{lines=(S.daily[state.day]||[]).slice();if(state.day===4&&state.contracts.includes("lieu")&&state.contracts.includes("mac"))after="day4Discovery";}
+    else if(state.day===7){lines=[{s:"DẪN TRUYỆN",t:"Đêm cuối trước đại hội, những chiếc đèn lồng cháy suốt dọc con đường Thanh Vân Sơn. Ai cũng có điều muốn đạt được vào ngày mai.",b:"sect"},{s:"HỆ THỐNG",t:"Ta nhớ những gì nguyên tác viết. Nhưng chưa ai biết được ngày mai ký chủ của ta sẽ lựa chọn điều gì.",b:"sect"}];}
+    else{lines=(S.daily[state.day]||[]).slice();}
+    if(state.day===4&&state.maxContracts===1){
+      state.maxContracts=2;state.flags.secondContractUnlocked=true;
+      lines.push({s:"KÝ ỨC",t:"...Một người có thể nhớ một lời hứa. Nhưng nhiều người mới có thể ghi nhớ những cái tên đã mất...",b:"void"});
+      lines.push({s:"HỆ THỐNG",t:"Ta vừa nhớ thêm một điều. Ta không chỉ có thể ký khế ước với một người. Quyền hạn thứ hai... đã trở lại.",b:"void"});
+      lines.push({s:"HỆ THỐNG",t:"[Quyền hạn khế ước: 02/02 ô khả dụng.] [Ngươi có thể chủ động tìm kiếm ký chủ mới. Ký chủ hiện tại sẽ không tự động biết về người thứ hai.]",b:"void"});
+    }
     if(state.day===2&&state.contracts.includes("lieu"))lines.push({s:"LIỄU THANH HÒA",t:"Hệ thống, ta đã ăn đủ bữa hôm nay. Không biết tại sao lại muốn kể ngươi nghe chuyện nhỏ như vậy.",b:"sect",p:"lieu"});
     if(state.day===3&&state.contracts.includes("ta"))lines.push({s:"TẠ VẤN SƠN",t:"Ta muốn đọc thử ghi chép về Cửu Diệp Thanh Tâm. Đại hội thì cứ để đám trẻ tranh nhau.",b:"mountain",p:"ta"});
     if(state.day===5&&state.contracts.includes("mac"))lines.push({s:"MẶC TỪ",t:"Cuốn cổ thư ta cần đã được đưa về Thanh Vân. Hệ thống, ngươi có kế hoạch nào không cần đánh nhau không?",b:"market",p:"mac"});
     if(state.day===6&&state.contracts.includes("mac")&&!state.flags.macWarned)lines.push({s:"HỆ THỐNG",t:"[Cảnh báo: nguyên tác ghi nhận Mặc Từ tử vong trong Đại Hội. Ký chủ vẫn chưa được báo đầy đủ về tử kiếp.]",b:"event",p:"mac"});
+    if(state.day>=6&&state.day<=7&&state.contracts.includes("lieu")&&state.contracts.includes("mac")&&!state.flags.sharedSecret){after="day4Discovery";}
     runLines(lines,after);
   }
-  function renderDiscovery(){bg("market","lieu");content.innerHTML='<div class="screen-card wide"><div class="micro">CROSS-CONTRACT INCIDENT / DAY 04</div><h2 class="screen-heading">Một dấu ấn, hai khế ước</h2><p class="screen-description">Liễu Thanh Hòa nhìn thấy Mặc Từ sử dụng lá phù mang cùng dấu ấn hệ thống. Cùng lúc ấy, cả hai gọi ngươi qua kênh liên lạc.</p><div class="info-strip">LIỄU: “Vì sao hắn có pháp khí giống của ta?”<br>MẶC TỪ: “Này, cô nương kia cứ nhìn ta. Ngươi biết gì à?”</div><div class="button-stack"><button class="choice-btn" data-action="discovery" data-option="truth">01 · NÓI THẬT: Cả hai đều là ký chủ của ta. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="half">02 · NÓI MỘT PHẦN: Đây là dấu ấn pháp khí chung. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="silent">03 · GIỮ IM LẶNG: Để họ tự suy luận. <span>›</span></button></div></div>';}
+  function renderDiscovery(){bg("market","lieu");content.innerHTML='<div class="screen-card wide"><div class="micro">CROSS-CONTRACT INCIDENT / DAY '+String(state.day).padStart(2,"0")+'</div><h2 class="screen-heading">Một dấu ấn, hai khế ước</h2><p class="screen-description">Liễu Thanh Hòa nhìn thấy Mặc Từ sử dụng lá phù mang cùng dấu ấn hệ thống. Cùng lúc ấy, cả hai gọi ngươi qua kênh liên lạc.</p><div class="info-strip">LIỄU: “Vì sao hắn có pháp khí giống của ta?”<br>MẶC TỪ: “Này, cô nương kia cứ nhìn ta. Ngươi biết gì à?”</div><div class="button-stack"><button class="choice-btn" data-action="discovery" data-option="truth">01 · NÓI THẬT: Cả hai đều là ký chủ của ta. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="half">02 · NÓI MỘT PHẦN: Đây là dấu ấn pháp khí chung. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="silent">03 · GIỮ IM LẶNG: Để họ tự suy luận. <span>›</span></button></div></div>';}
   function discovery(k){var lines;if(k==="truth"){state.flags.sharedSecret="revealed";state.trust.lieu=Math.min(100,state.trust.lieu+7);state.trust.mac=Math.min(100,state.trust.mac+4);lines=[{s:"HỆ THỐNG",t:"[Đã thông báo về khế ước chung cho Liễu Thanh Hòa và Mặc Từ.]",b:"market"},{s:"LIỄU THANH HÒA",t:"...Hai người? Vậy ngươi cũng từng nói với hắn những lời như nói với ta?",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Khoan, vậy ta có được giảm giá khi mua đồ trong cửa hàng hệ thống không?",b:"market",p:"mac"}];}
     else if(k==="half"){state.flags.sharedSecret="suspected";lines=[{s:"HỆ THỐNG",t:"[Đã cung cấp giải thích một phần: pháp khí cùng xuất xứ có chung dấu ấn.]",b:"market"},{s:"LIỄU THANH HÒA",t:"Nghe có lý. Nhưng sao lúc nãy ngươi ngập ngừng?",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Ngươi nói không sai... nhưng cũng chẳng giống câu trả lời đầy đủ cho lắm.",b:"market",p:"mac"}];}
     else{state.flags.sharedSecret="hidden";lines=[{s:"DẪN TRUYỆN",t:"Hệ thống không trả lời. Hai người từ xa nhìn nhau giữa đám đông phường thị.",b:"market"},{s:"LIỄU THANH HÒA",t:"Nếu ngươi không nói... ta sẽ tự tìm hiểu.",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Ha. Hình như ta vừa phát hiện một chuyện hay ho.",b:"market",p:"mac"}];}
     runLines(lines,"hub");
   }
-  function renderEventChoice(){bg("event","mac");var mac=state.contracts.includes("mac");content.innerHTML='<div class="screen-card wide"><div class="micro">ORIGINAL CHAPTER 136 / CRITICAL EVENT</div><h2 class="screen-heading">Người đáng lẽ phải chết</h2><p class="screen-description">'+(mac?'Mặc Từ đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Lục Chiêu Dã tiến về phía sân đấu. Ngươi biết kết cục được viết trong nguyên tác.':'Mặc Từ — một ứng viên mà ngươi chưa ký — đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Nguyên tác viết rằng hắn sẽ chết tại đây.')+'</p><div class="info-strip">[Cảnh báo] Chỉ có đủ thời gian để ra một quyết định. Không có cách nào chắc chắn kiểm soát toàn bộ nhân quả.</div><div class="button-stack"><button class="choice-btn" data-action="event" data-option="protect" '+(state.energy<30?'disabled':'')+'>01 · DÙNG 30 LINH NĂNG ĐỂ CAN THIỆP VÀ BẢO HỘ <span>›</span></button><button class="choice-btn" data-action="event" data-option="warn">02 · GỬI LỜI CẢNH BÁO, ĐỂ HỌ TỰ TÌM ĐƯỜNG THOÁT <span>›</span></button><button class="choice-btn" data-action="event" data-option="observe">03 · KHÔNG CAN THIỆP, QUAN SÁT NGUYÊN TÁC <span>›</span></button></div></div>';}
+  function renderEventChoice(){bg("event","mac");var mac=state.contracts.includes("mac");content.innerHTML='<div class="screen-card wide"><div class="micro">ORIGINAL CHAPTER 136 / CRITICAL EVENT</div><h2 class="screen-heading">Người đáng lẽ phải chết</h2><p class="screen-description">'+(mac?'Mặc Từ đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Lục Chiêu Dã tiến về phía sân đấu. Ngươi biết kết cục được viết trong nguyên tác.':'Mặc Từ — một ứng viên mà ngươi chưa ký — đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Nguyên tác viết rằng hắn sẽ chết tại đây.')+'</p><div class="info-strip">[Cảnh báo] Chỉ có đủ thời gian để ra một quyết định. Không có cách nào chắc chắn kiểm soát toàn bộ nhân quả.</div><div class="button-stack"><button class="choice-btn" data-action="event" data-option="protect" '+(state.energy<30?'disabled':'')+'>01 · CAN THIỆP QUA KHẾ ƯỚC HIỆN CÓ (−30 LINH NĂNG) <span>›</span></button><button class="choice-btn" data-action="event" data-option="warn">02 · TÌM CÁCH GỬI CẢNH BÁO, ĐỂ NGƯỜI TRONG CUỘC TỰ QUYẾT <span>›</span></button><button class="choice-btn" data-action="event" data-option="observe">03 · KHÔNG CAN THIỆP, QUAN SÁT NGUYÊN TÁC <span>›</span></button></div></div>';}
   function event(k){var mac=state.contracts.includes("mac"),lines=[];state.flags.intervention=k;state.eventDone=true;
-    if(k==="protect"){if(state.energy<30){notify("Không đủ linh năng");return;}state.energy-=30;state.flags.macOutcome="saved";if(mac)state.trust.mac=Math.min(100,state.trust.mac+15);lines=[{s:"HỆ THỐNG",t:"[Tiêu hao 30 linh năng.] [Đã kích hoạt màn chắn khẩn cấp trong phạm vi khế ước tạm thời.]",b:"event",p:"mac"},{s:"DẪN TRUYỆN",t:"Kiếm quang xé gió, nhưng người đáng lẽ ngã xuống vẫn còn đứng. Mặc Từ lùi lại, đôi mắt lần đầu không còn vẻ lười biếng.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"...Hệ thống. Món nợ này ta nhớ.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Đối chiếu nguyên tác: Mặc Từ tử vong.] [Hiện tại: Mặc Từ còn sống.] [Nhân quả đã phân nhánh.]",b:"event"}];}
-    else if(k==="warn"){state.flags.macOutcome="escaped";lines=[{s:"HỆ THỐNG",t:"[Đã truyền cảnh báo về tử kiếp. Không cưỡng ép hành động cá thể.]",b:"event"},{s:"DẪN TRUYỆN",t:"Mặc Từ nghe thấy cảnh báo, cắn răng bỏ cổ thư và chạy về phía lối phụ. Hắn thoát được, nhưng bị thương và mất thứ mình đến tìm.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"Thứ kia còn có thể tìm lại. Mạng thì không. ...Ngươi nói đúng, lần này ta nợ ngươi.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Hiện tại: Mặc Từ còn sống, bị thương.] [Cổ thư: thất lạc.] [Nguyên tác đã sai lệch.]",b:"event"}];}
+    if(k==="protect"){if(state.energy<30){notify("Không đủ linh năng");return;}state.energy-=30;state.flags.macOutcome="saved";if(mac)state.trust.mac=Math.min(100,state.trust.mac+15);lines=[{s:"HỆ THỐNG",t:"[Tiêu hao 30 linh năng.] [Đã kích hoạt một lần bảo hộ khẩn cấp thông qua liên kết hiện có.]",b:"event",p:"mac"},{s:"DẪN TRUYỆN",t:"Kiếm quang xé gió, nhưng người đáng lẽ ngã xuống vẫn còn đứng. Mặc Từ lùi lại, đôi mắt lần đầu không còn vẻ lười biếng.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"...Hệ thống. Món nợ này ta nhớ.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Đối chiếu nguyên tác: Mặc Từ tử vong.] [Hiện tại: Mặc Từ còn sống.] [Nhân quả đã phân nhánh.]",b:"event"}];}
+    else if(k==="warn"){state.flags.macOutcome="escaped";lines=[{s:"HỆ THỐNG",t:"[Đã chuyển lời cảnh báo qua liên kết hiện có. Không cưỡng ép hành động cá thể.]",b:"event"},{s:"DẪN TRUYỆN",t:"Mặc Từ nghe thấy cảnh báo, cắn răng bỏ cổ thư và chạy về phía lối phụ. Hắn thoát được, nhưng bị thương và mất thứ mình đến tìm.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"Thứ kia còn có thể tìm lại. Mạng thì không. ...Ngươi nói đúng, lần này ta nợ ngươi.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Hiện tại: Mặc Từ còn sống, bị thương.] [Cổ thư: thất lạc.] [Nguyên tác đã sai lệch.]",b:"event"}];}
     else{state.flags.macOutcome="dead";if(mac)state.flags.macDead=true;lines=[{s:"DẪN TRUYỆN",t:"Kiếm quang rơi xuống giữa tiếng hô hoán. Giống như trong những trang sách, một ma tu vô danh ngã xuống bên thềm đá.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Đối chiếu nguyên tác: phù hợp.] [Mặc Từ đã tử vong.] [Một khế ước đã chấm dứt.] ",b:"event"},{s:"DẪN TRUYỆN",t:"Đại hội vẫn tiếp diễn. Nhưng giờ đây ngươi hiểu rằng biết trước một cái chết và quyết định không thay đổi nó là hai chuyện khác nhau.",b:"event"}];}
     lines.push({s:"KÝ ỨC",t:"...Đừng để những cái tên ấy... biến mất không một ai nhớ...",b:"void"});
     lines.push({s:"HỆ THỐNG",t:"[Nhiệm vụ cấp cao: phát hiện mảnh ký ức mới.] [Trạng thái: vẫn bị niêm phong.] [Đã ghi nhận diễn biến của một cá thể ngoài nguyên tác ban đầu.]",b:"void"});
@@ -125,7 +171,7 @@
   function showArchive(){
     var entries=S.archive.map(function(o){return '<div class="archive-entry"><small>'+esc(o.meta)+'</small><br><strong>'+esc(o.title)+'</strong><p>'+esc(o.body)+'</p></div>';}).join("");
     if(state.flags.macOutcome)entries+='<div class="archive-entry"><small>DIỄN BIẾN HIỆN TẠI</small><br><strong>Đại Hội Vấn Đạo — Kết quả thay đổi</strong><p>'+esc(state.flags.macOutcome==="dead"?"Mặc Từ tử vong như nguyên tác.":state.flags.macOutcome==="saved"?"Mặc Từ đã được cứu và còn sống.":"Mặc Từ thoát chết nhưng mất cổ thư.")+'</p></div>';
-    modal("Thư Viện Nguyên Tác",'<p class="modal-intro">Hệ thống nắm toàn bộ 1.286 chương của tiểu thuyết trong thế giới truyện. Đây là mục lục bản demo gồm những trích lục quan trọng, không phải toàn văn tiểu thuyết.</p>'+entries);
+    modal("Thư Viện Nguyên Tác",'<p class="modal-intro">Hệ thống nắm toàn bộ 1.286 chương của tiểu thuyết trong thế giới truyện. Đây là mục lục của bản demo với những trích lục quan trọng, không phải toàn văn tiểu thuyết.</p>'+entries);
   }
   function showLog(){var html=state.log.length?state.log.slice(-50).map(function(o){return '<div class="log-item"><strong>'+esc(o.s)+'</strong> — '+esc(o.t)+'</div>';}).join(""):'<p class="modal-intro">Chưa có hội thoại nào.</p>';modal("Nhật Ký Hội Thoại",html);}
   function switchHost(id){if(!state.contracts.includes(id))return;if(state.phase==="dialogue"){notify("Hãy đọc xong đoạn hội thoại hiện tại");return;}state.activeHost=id;state.phase="hub";persist();render();}
@@ -145,6 +191,7 @@
   $("nextBtn").addEventListener("click",next);
   $("continueBtn").addEventListener("click",function(){if(state.phase==="dialogue")next();else if(state.phase==="title")start();else if(state.phase==="hub")advance();else if(state.phase==="selection")notify("Chọn một ứng viên để bắt đầu liên lạc");else toHub();});
   $("archiveBtn").addEventListener("click",showArchive);$("logBtn").addEventListener("click",showLog);
+  $("panelToggle").addEventListener("click",function(){var open=document.body.classList.toggle("show-status");this.setAttribute("aria-expanded",String(open));});
   $("saveBtn").addEventListener("click",function(){persist();notify("Đã lưu tiến trình trong trình duyệt");});
   $("settingsBtn").addEventListener("click",function(){sound=!sound;$("settingsBtn").textContent=sound?"♫":"♪";notify(sound?"Đã bật âm thanh UI":"Đã tắt âm thanh UI");beep();});
   $("modalClose").addEventListener("click",closeModal);

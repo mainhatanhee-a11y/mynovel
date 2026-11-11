@@ -9,16 +9,17 @@ window.VN_STORY = {
     {s:"KÝ ỨC",t:"...Tuyệt đối không được để những cái tên ấy...",b:"void"},
     {s:"HỆ THỐNG",t:"[ĐINH!] [Phát hiện ký ức nhiệm vụ không hoàn chỉnh.] [Đang cố gắng khôi phục chỉ thị gốc...]",b:"void"},
     {s:"HỆ THỐNG",t:"[Khôi phục thất bại.] [Chỉ thị cấp cao: NIÊM PHONG.] [Đã ghi nhận mục tiêu tạm thời: tìm kiếm ký chủ, hỗ trợ tu luyện, thiết lập liên kết nhân quả.]",b:"void"},
+    {s:"HỆ THỐNG",t:"Ta là... hệ thống. Phải rồi. Ta cần tìm một người để lập khế ước. Nhưng còn ai đã ra lệnh cho ta, và ta phải làm điều đó vì sao?",b:"void"},
     {s:"DẪN TRUYỆN",t:"Không rõ ai đã để lại lời nhắc ấy. Dù cố nhớ thêm, ngươi chỉ gặp một cánh cửa bị khóa sâu trong ý thức.",b:"void"},
     {s:"HỆ THỐNG",t:"[Khởi tạo hoàn tất.] [Đang tải thông tin thế giới để bắt đầu thực thi mục tiêu tạm thời.]",b:"world"},
     {s:"HỆ THỐNG",t:"[Thương Huyền Giới — thế giới tu chân diễn sinh từ tiểu thuyết 《Kiếm Vấn Trường Sinh》.] [Nhân vật có ý chí và cuộc đời độc lập.]",b:"world"},
     {s:"HỆ THỐNG",t:"[Thư Viện Nguyên Tác: đã đồng bộ 1.286/1.286 chương.] [Ngươi biết toàn bộ nội dung tiểu thuyết; những điều không được viết vẫn cần tự khám phá.]",b:"world"},
     {s:"HỆ THỐNG",t:"[Đã xác nhận Thiên Mệnh Chi Tử: Lục Chiêu Dã.] [Kết cục nguyên tác: phi thăng.] [Không thể đề nghị khế ước đặc biệt khi chưa đủ điều kiện.]",b:"sect",p:"luc"},
     {s:"DẪN TRUYỆN",t:"Trên sân luyện kiếm Thanh Vân Tông, một thiếu niên áo trắng vừa hoàn thành kiếm thức. Hắn nhặt lại thanh kiếm gỗ, cúi đầu cảm tạ vị sư huynh đã chỉ điểm rồi tiếp tục luyện tập.",b:"sect",p:"luc"},
-    {s:"HỆ THỐNG",t:"[HƯỚNG DẪN 01] Ngươi có thể ký tối đa hai khế ước thông thường trong giai đoạn đầu. Ký chủ có quyền từ chối đề nghị và sẽ tự quyết định hành động của họ.",b:"sect"},
+    {s:"HỆ THỐNG",t:"[HƯỚNG DẪN 01] Hiện chỉ có một ô khế ước khả dụng. Hãy chọn MỘT trong ba ứng viên. Các quyền hạn còn lại sẽ được khôi phục khi ký ức hệ thống trở về.",b:"sect"},
     {s:"HỆ THỐNG",t:"[HƯỚNG DẪN 02] Hệ thống có 120 linh năng ban đầu. Có thể dùng để ban vật phẩm, hỗ trợ và giao nhiệm vụ. Linh năng hồi phục một phần theo mốc ngày.",b:"sect"},
-    {s:"HỆ THỐNG",t:"[HƯỚNG DẪN 03] Các khế ước cùng tồn tại trong một thế giới. Việc ngươi nói hoặc làm với một người có thể ảnh hưởng đến những người còn lại.",b:"sect"},
-    {s:"HỆ THỐNG",t:"[Đã tìm thấy 03 ứng viên.] [Hãy quan sát và lựa chọn ký chủ đầu tiên. Ngươi cũng có thể tạm thời chỉ ký với một người.]",b:"world"}
+    {s:"HỆ THỐNG",t:"[HƯỚNG DẪN 03] Các khế ước có thể cùng tồn tại trong một thế giới sau khi được mở khóa. Hệ thống không được cưỡng ép ý chí của ký chủ.",b:"sect"},
+    {s:"HỆ THỐNG",t:"[Đã tìm thấy 03 ứng viên.] [Lựa chọn người đầu tiên để liên lạc. Khế ước chỉ được thành lập khi đối tượng đồng ý.]",b:"world"}
   ],
   hosts: {
     lieu: {
