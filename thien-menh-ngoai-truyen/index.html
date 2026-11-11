@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1019">
+  <meta name="description" content="Thiên Mệnh Ngoại Truyện — visual novel tu chân, nơi bạn là hệ thống bàn tay vàng với nhiều ký chủ.">
+  <title>Thiên Mệnh Ngoại Truyện · Hệ Thống Bàn Tay Vàng</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./story.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-icon">命</div><div class="brand-copy"><strong>THIÊN MỆNH NGOẠI TRUYỆN</strong><small>HỆ THỐNG BÀN TAY VÀNG</small></div></div>
+      <div class="top-tools"><span class="build-label">BẢN THỬ NGHIỆM · 0.1</span><button id="archiveBtn" class="top-btn" type="button">▤ <span>NGUYÊN TÁC</span></button><button id="logBtn" class="top-btn" type="button">☷ <span>NHẬT KÝ</span></button><button id="saveBtn" class="top-btn" type="button">◇ <span>LƯU</span></button><button id="settingsBtn" class="top-btn icon-btn" type="button" title="Bật/tắt âm thanh" aria-label="Bật/tắt âm thanh">♫</button></div>
+    </header>
+    <div class="content-grid">
+      <main class="novel-pane">
+        <div id="scene" class="scene scene-void">
+          <svg class="scenery" viewBox="0 0 960 640" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs><linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#111b36"/><stop offset=".57" stop-color="#344565"/><stop offset="1" stop-color="#997b73"/></linearGradient></defs>
+            <rect width="960" height="640" fill="url(#night)"/>
+            <circle cx="710" cy="149" r="51" fill="#e0cfae" opacity=".86"/>
+            <path d="M0 390L94 286L188 360L292 255L430 392L546 275L680 389L802 292L960 406V640H0Z" fill="#34445c"/>
+            <path d="M0 445L126 364L233 452L340 332L478 453L607 356L751 459L856 365L960 419V640H0Z" fill="#26364b"/>
+            <path d="M0 518L150 448L263 501L403 419L562 514L715 428L831 490L960 445V640H0Z" fill="#17283a"/>
+            <g shape-rendering="crispEdges" fill="#182635">
+              <rect x="546" y="371" width="234" height="153"/><rect x="576" y="338" width="176" height="33"/><rect x="555" y="324" width="219" height="13"/><rect x="600" y="289" width="118" height="35"/><rect x="580" y="276" width="165" height="13"/><rect x="626" y="239" width="75" height="37"/><rect x="609" y="228" width="110" height="11"/><rect x="649" y="194" width="29" height="34"/>
+              <rect x="597" y="390" width="31" height="134"/><rect x="691" y="390" width="32" height="134"/>
+              <rect x="647" y="404" width="27" height="56" fill="#a07b58"/><rect x="653" y="409" width="15" height="43" fill="#d7a470"/>
+            </g>
+            <g fill="#1a2939" shape-rendering="crispEdges"><rect x="70" y="380" width="12" height="200"/><rect x="42" y="414" width="70" height="18"/><rect x="28" y="445" width="91" height="19"/><rect x="870" y="403" width="12" height="215"/><rect x="840" y="442" width="71" height="16"/></g>
+            <g fill="#e1bd8b" opacity=".7"><rect x="94" y="178" width="4" height="4"/><rect x="187" y="96" width="4" height="4"/><rect x="440" y="165" width="3" height="3"/><rect x="838" y="106" width="4" height="4"/><rect x="329" y="67" width="3" height="3"/></g>
+            <rect y="556" width="960" height="84" fill="#101a29" opacity=".68"/>
+          </svg>
+          <div class="scene-vignette"></div>
+          <div class="scene-grain"></div>
+          <div class="scene-heading"><div id="sceneKicker" class="eyebrow">SYSTEM / INITIALIZING</div><div id="sceneLocation" class="scene-location">HƯ VÔ</div></div>
+          <div id="scenePortrait" class="scene-portrait" aria-hidden="true"></div>
+          <div id="mainContent" class="main-content" aria-live="polite"></div>
+          <div id="dialogue" class="dialogue hidden">
+            <div class="dialogue-head"><span id="speaker" class="speaker">HỆ THỐNG</span><span id="lineCounter" class="line-counter">01 / 01</span></div>
+            <p id="dialogueText" class="dialogue-text"></p>
+            <div class="dialogue-bottom"><span id="dialogueHint" class="dialogue-hint">NHẤN ĐỂ TIẾP TỤC · SPACE ↵</span><button id="nextBtn" class="next-button" type="button">TIẾP <span>›</span></button></div>
+          </div>
+        </div>
+        <footer class="stage-footer"><span><span class="signal-dot"></span> KẾT NỐI ỔN ĐỊNH</span><span id="footerState">BỘ NHỚ HỆ THỐNG ĐANG KHỞI TẠO</span><span>VN ENGINE / OFFLINE READY</span></footer>
+      </main>
+      <aside class="sidebar" aria-label="Bảng điều khiển hệ thống">
+        <div class="sidebar-label"><span class="blink-dot"></span> GIAO DIỆN HỆ THỐNG <span class="sidebar-code">#000</span></div>
+        <section class="system-panel">
+          <div class="panel-title">THÔNG SỐ CỐT LÕI <span>◈</span></div>
+          <div class="resource"><div><span>LINH NĂNG</span><strong id="energyValue">120 <small>/ 200</small></strong></div><div class="meter"><div id="energyBar"></div></div></div>
+          <div class="mini-stats"><div><span>KHẾ ƯỚC</span><strong id="contractCount">00 / 02</strong></div><div><span>THIÊN LỊCH</span><strong id="dayValue">NGÀY 01</strong></div></div>
+        </section>
+        <section class="system-panel host-panel">
+          <div class="panel-title">DANH SÁCH KÝ CHỦ <span id="hostPanelMarker">00 ACTIVE</span></div>
+          <div id="hostList" class="host-list"><p class="empty">Chưa có liên kết nào được thiết lập.</p></div>
+        </section>
+        <section class="system-panel">
+          <div class="panel-title">TRẠNG THÁI THẾ GIỚI <span>◎</span></div>
+          <div class="world-status"><span>THƯƠNG HUYỀN GIỚI</span><strong>ỔN ĐỊNH</strong></div>
+          <div class="world-status"><span>THIÊN MỆNH CHI TỬ</span><strong>LỤC CHIÊU DÃ</strong></div>
+          <div class="world-status"><span>NHIỆM VỤ ẨN</span><strong class="warning">NIÊM PHONG</strong></div>
+          <div class="system-note">"Thiên mệnh đã được viết. Ngoại truyện thì chưa."</div>
+        </section>
+        <button id="continueBtn" class="continue-cta" type="button">TIẾP TỤC TRUYỆN <span>↗</span></button>
+        <p class="sidebar-foot">TIẾN TRÌNH ĐƯỢC LƯU TRÊN TRÌNH DUYỆT · KHÔNG CẦN ĐĂNG NHẬP</p>
+      </aside>
+    </div>
+  </div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Bảng thông tin"><div class="modal-box"><div class="modal-top"><div><small>HỆ THỐNG / DATABASE</small><h2 id="modalTitle"></h2></div><button id="modalClose" class="modal-close" type="button" aria-label="Đóng">✕</button></div><div id="modalBody" class="modal-body"></div></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript>Game cần bật JavaScript để chạy.</noscript>
+</body>
+</html>
