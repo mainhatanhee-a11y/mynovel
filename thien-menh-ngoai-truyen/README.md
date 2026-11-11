@@ -38,3 +38,4 @@ Web visual novel bằng HTML, CSS, JavaScript thuần, không cần build hay se
 Đây là bản demo có thể chơi, chưa phải game hoàn chỉnh. Chưa có toàn văn 1.286 chương tiểu thuyết, chỉ có trích lục phục vụ demo; chương tiếp theo sau Đại Hội chưa được viết. Nền và chân dung là đồ họa SVG dạng pixel tự vẽ bằng code, sẽ được thay bằng sprite/background pixel art chi tiết ở bản sau. Các hệ thống tu luyện, cửa hàng, nhiệm vụ, định tuyến cốt truyện và cân bằng chiến đấu cần mở rộng.
 
 Nội dung hư cấu và minh họa của prototype là bản thảo, có thể chỉnh trực tiếp tại story.js.
+ver 0.2
