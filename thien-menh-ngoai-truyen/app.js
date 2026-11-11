@@ -1,207 +1,234 @@
-/* Thiên Mệnh Ngoại Truyện — visual novel engine, vanilla JS, chạy offline. */
-(function () {
-  "use strict";
-  var S=window.VN_STORY;
-  if(!S){document.body.textContent="Không tải được story.js";return;}
-  var STORE="thien-menh-ngoai-truyen-v2";
-  var $=function(id){return document.getElementById(id);};
-  var scene=$("scene"), content=$("mainContent"), dialogue=$("dialogue");
-  var timer=null, typing=false, fullText="", toastTimer=null, sound=false, audio=null;
-  var saved;
-  function fresh(){return {phase:"title",queue:[],lineIndex:0,after:"",sequence:0,lastLogged:"",log:[],day:1,energy:120,maxContracts:1,contracts:[],activeHost:null,pendingHost:null,trust:{lieu:30,mac:30,ta:30},flags:{},eventDone:false};}
-  try{saved=JSON.parse(localStorage.getItem(STORE)||"null");}catch(e){saved=null;}
-  var state=saved&&saved.phase&&Array.isArray(saved.contracts)&&saved.flags&&saved.trust?saved:fresh();
-  function persist(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){/* storage disabled */}}
-  function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
-  function notify(message){var el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove("show");},2300);}
-  function beep(){if(!sound)return;try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();var o=audio.createOscillator(),g=audio.createGain();o.type="sine";o.frequency.value=650;g.gain.value=.012;o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+.035);}catch(e){}}
-  function portrait(id){
-    var cfg={lieu:{robe:"#558e9c",trim:"#acd0c7",hair:"#1a2335",eye:"#1f3240",acc:"#bfddce",skin:"#e6bc99"},mac:{robe:"#6d344c",trim:"#c68178",hair:"#afb6bd",eye:"#3c2637",acc:"#b69b8b",skin:"#dfb08c"},ta:{robe:"#e0d4b9",trim:"#b6a174",hair:"#e5e1d5",eye:"#67717d",acc:"#c9aa7f",skin:"#dfbc9e"},luc:{robe:"#8da9c0",trim:"#e2e6df",hair:"#232c37",eye:"#2d3b48",acc:"#b7c6cc",skin:"#dfb594"}}[id];
-    if(!cfg)return "";
-    var x='<svg class="portrait-svg" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chân dung pixel art" shape-rendering="crispEdges">';
-    x+='<rect x="34" y="32" width="32" height="53" fill="'+cfg.hair+'"/>';
-    x+='<rect x="29" y="79" width="42" height="15" fill="'+cfg.skin+'"/>';
-    x+='<rect x="23" y="88" width="54" height="52" fill="'+cfg.robe+'"/>';
-    x+='<rect x="14" y="97" width="15" height="43" fill="'+cfg.robe+'"/><rect x="71" y="97" width="15" height="43" fill="'+cfg.robe+'"/>';
-    x+='<rect x="42" y="92" width="16" height="48" fill="'+cfg.trim+'"/><rect x="47" y="96" width="6" height="44" fill="'+cfg.robe+'"/>';
-    x+='<rect x="33" y="42" width="34" height="38" fill="'+cfg.skin+'"/><rect x="30" y="44" width="5" height="25" fill="'+cfg.hair+'"/><rect x="65" y="44" width="5" height="27" fill="'+cfg.hair+'"/>';
-    x+='<rect x="31" y="33" width="38" height="13" fill="'+cfg.hair+'"/><rect x="39" y="26" width="26" height="12" fill="'+cfg.hair+'"/>';
-    x+='<rect x="40" y="58" width="6" height="3" fill="'+cfg.eye+'"/><rect x="55" y="58" width="6" height="3" fill="'+cfg.eye+'"/>';
-    x+='<rect x="47" y="71" width="8" height="2" fill="#986e67"/>';
-    x+='<rect x="30" y="106" width="5" height="34" fill="'+cfg.trim+'"/><rect x="65" y="106" width="5" height="34" fill="'+cfg.trim+'"/>';
-    if(id==="lieu"){x+='<rect x="58" y="33" width="16" height="4" fill="'+cfg.acc+'"/><rect x="73" y="29" width="4" height="14" fill="'+cfg.acc+'"/>';}
-    if(id==="mac"){x+='<rect x="24" y="48" width="9" height="40" fill="'+cfg.hair+'"/><rect x="67" y="48" width="9" height="40" fill="'+cfg.hair+'"/><rect x="35" y="30" width="30" height="4" fill="#d6d9d6"/>';}
-    if(id==="ta"){x+='<rect x="43" y="76" width="15" height="27" fill="#e8e5df"/><rect x="33" y="42" width="4" height="65" fill="'+cfg.hair+'"/><rect x="64" y="42" width="4" height="65" fill="'+cfg.hair+'"/><rect x="45" y="32" width="10" height="4" fill="'+cfg.acc+'"/>';}
-    if(id==="luc"){x+='<rect x="47" y="17" width="7" height="21" fill="'+cfg.hair+'"/><rect x="42" y="23" width="17" height="6" fill="'+cfg.acc+'"/>';}
-    return x+"</svg>";
-  }
-  function bg(b,p){scene.className="scene scene-"+(b||"hub");var label={void:"KHÔNG GIAN VÔ ĐỊNH",world:"THƯƠNG HUYỀN GIỚI",sect:"THANH VÂN TÔNG",market:"PHƯỜNG VÂN KIỀU",mountain:"VẤN SƠN PHONG",hub:"KHÔNG GIAN HỆ THỐNG",event:"ĐẠI HỘI VẤN ĐẠO",archive:"THƯ VIỆN NGUYÊN TÁC"}; $("sceneLocation").textContent=label[b]||label.hub;$("sceneKicker").textContent=b==="void"?"MEMORY / RECOVERY":b==="event"?"WORLD EVENT / CRITICAL":"SYSTEM / CONNECTION STABLE";$("scenePortrait").innerHTML=portrait(p);}
-  function renderSide(){
-    $("energyValue").innerHTML=state.energy+' <small>/ 200</small>';
-    $("energyBar").style.width=Math.max(0,Math.min(100,state.energy/2))+"%";
-    $("contractCount").textContent=String(state.contracts.length).padStart(2,"0")+" / "+String(state.maxContracts||1).padStart(2,"0");
-    $("dayValue").textContent="NGÀY "+String(state.day).padStart(2,"0");
-    $("hostPanelMarker").textContent=String(state.contracts.length).padStart(2,"0")+" ACTIVE";
-    $("hostList").innerHTML=state.contracts.length?state.contracts.map(function(id){
-      var h=S.hosts[id],status=(state.flags.macDead&&id==="mac")?"ĐÃ TỬ VONG":"TÍN NHIỆM "+state.trust[id];
-      return '<button class="host-mini" type="button" data-action="switch" data-host="'+id+'"><div class="host-icon">'+portrait(id)+'</div><div class="host-info"><strong>'+esc(h.name)+'</strong><small>'+esc(h.realm)+'</small><em>'+status+'</em></div></button>';
-    }).join(""):'<p class="empty">Chưa có liên kết nào được thiết lập.</p>';
-    $("footerState").textContent=state.phase==="title"?"CHỜ KHỞI ĐỘNG":state.phase==="dialogue"?"ĐỒNG BỘ ĐOẠN KÝ ỨC":"KHẾ ƯỚC / "+state.contracts.length+" · MỐC NGÀY "+state.day;
-    $("continueBtn").innerHTML=state.phase==="dialogue"?'TIẾP HỘI THOẠI <span>↗</span>':state.phase==="title"?'KHỞI ĐỘNG <span>↗</span>':state.phase==="hub"?'CHUYỂN NGÀY <span>↗</span>':'KHÔNG GIAN HỆ THỐNG <span>↗</span>';
-  }
-  function render(){
-    clearInterval(timer);typing=false;
-    if(state.phase!=="hub"){document.body.classList.remove("show-status");$("panelToggle").setAttribute("aria-expanded","false");}
-    renderSide();dialogue.classList.add("hidden");content.innerHTML="";
-    if(state.phase==="title"){bg("void");content.innerHTML='<div class="screen-card"><div class="ornament">✦ · ◈ · ✦</div><div class="micro">A MULTI-HOST CULTIVATION VISUAL NOVEL</div><h1 class="main-title">THIÊN MỆNH<br>NGOẠI TRUYỆN</h1><p class="sub-title">Ngươi không phải nhân vật chính. Ngươi là một hệ thống đã đánh mất nhiệm vụ của chính mình. Hãy nhớ lại. Rồi lựa chọn người đầu tiên sẽ nghe thấy giọng nói của ngươi.</p><div class="divider-gold"></div><div class="button-stack"><button class="primary-btn" data-action="start">THỨC TỈNH HỆ THỐNG <span>↗</span></button><button class="secondary-btn" data-action="archive">XEM BẢN GHI NGUYÊN TÁC <span>▤</span></button></div><p class="choice-caption">CHƯƠNG 00 · KÝ ỨC / KHẾ ƯỚC / THIÊN MỆNH.</p></div>';return;}
-    if(state.phase==="dialogue"){var line=state.queue[state.lineIndex];if(!line){finishQueue();return;}bg(line.b||"hub",line.p);dialogue.classList.remove("hidden");dialogue.dataset.voice=line.s==="HỆ THỐNG"?"system":line.s==="KÝ ỨC"?"memory":line.s==="DẪN TRUYỆN"?"narrator":"character";$("speaker").textContent=line.s;$("lineCounter").textContent=String(state.lineIndex+1).padStart(2,"0")+" / "+String(state.queue.length).padStart(2,"0");$("dialogueHint").textContent="NHẤN ĐỂ TIẾP TỤC · SPACE ↵";type(line.t);var key=state.sequence+":"+state.lineIndex;if(state.lastLogged!==key){state.log.push({s:line.s,t:line.t});state.log=state.log.slice(-120);state.lastLogged=key;persist();}return;}
-    if(state.phase==="selection"){renderSelection();return;}
-    if(state.phase==="contact-choice"){renderContactChoice();return;}
-    if(state.phase==="contract-prompt"){renderContractPrompt();return;}
-    if(state.phase==="hub"){renderHub();return;}
-    if(state.phase==="discovery-choice"){renderDiscovery();return;}
-    if(state.phase==="event-choice"){renderEventChoice();return;}
-    if(state.phase==="ending"){renderEnding();return;}
-  }
-  function type(t){fullText=t;var i=0;typing=true;$("dialogueText").textContent="";$("nextBtn").innerHTML='BỎ QUA <span>›</span>';var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;if(reduced){finishTyping();return;}timer=setInterval(function(){i=Math.min(fullText.length,i+2);$("dialogueText").textContent=fullText.slice(0,i);if(i>=fullText.length)finishTyping();},22);}
-  function finishTyping(){clearInterval(timer);typing=false;$("dialogueText").textContent=fullText;$("nextBtn").innerHTML='TIẾP <span>›</span>';}
-  function next(){if(state.phase!=="dialogue")return;if(typing){finishTyping();return;}beep();if(state.lineIndex<state.queue.length-1){state.lineIndex++;persist();render();}else finishQueue();}
-  function runLines(lines,after){state.phase="dialogue";state.queue=lines;state.lineIndex=0;state.after=after;state.sequence++;state.lastLogged="";persist();render();}
-  function finishQueue(){var after=state.after;state.queue=[];state.lineIndex=0;state.after="";if(after==="selection")state.phase="selection";else if(after==="contactChoice")state.phase="contact-choice";else if(after==="contractPrompt")state.phase="contract-prompt";else if(after==="day4Discovery")state.phase="discovery-choice";else if(after==="eventChoice")state.phase="event-choice";else if(after==="ending")state.phase="ending";else state.phase="hub";persist();render();}
-  function start(){state=fresh();runLines(S.intro,"selection");}
-  function renderSelection(){
-    bg("world");$("scenePortrait").innerHTML="";
-    var max=state.maxContracts||1,first=max===1;
-    var cards=Object.keys(S.hosts).map(function(id){
-      var h=S.hosts[id],chosen=state.contracts.indexOf(id)>=0;
-      return '<button class="candidate'+(chosen?' selected':'')+'" data-action="contact" data-host="'+id+'" '+(chosen||state.contracts.length>=max?'disabled':'')+'><div class="candidate-portrait">'+portrait(id)+'</div><div class="candidate-body"><strong>'+esc(h.name)+'</strong><small>'+esc(h.realm)+'</small><small>'+esc(h.role)+'</small><em>'+(chosen?'ĐÃ KÝ KHẾ ƯỚC':'KẾT NỐI →')+'</em></div></button>';
-    }).join("");
-    content.innerHTML='<div class="screen-card wide"><div class="micro">CHƯƠNG 00 / KHẾ ƯỚC</div><h2 class="screen-heading">'+(first?'Chỉ có thể chọn một người.':'Một cánh cửa khác vừa mở ra.')+'</h2><p class="screen-description">'+(first?'Ba cuộc đời. Ba con đường. Hãy lắng nghe họ trước khi trao khế ước đầu tiên. Người không được chọn vẫn tiếp tục sống trong thế giới này.':'Ký ức về quyền hạn thứ hai đã trở lại. Ngươi có thể tiếp tục đồng hành với một người, hoặc thử liên hệ thêm một ký chủ.')+'</p><div class="selection-grid">'+cards+'</div><div class="info-strip">'+(first?'◈ QUYỀN HẠN HIỆN TẠI: <b>01 KHẾ ƯỚC</b> · Một mình ngươi không thể bắt người khác đồng ý.':'◈ KẾT NỐI: '+state.contracts.length+'/'+max+' · Các ký chủ không tự biết về những khế ước khác.')+'</div><button class="secondary-btn" data-action="hub">← TRỞ VỀ CÂU CHUYỆN</button></div>';
-  }
-  function contact(id){if(!S.hosts[id]||state.contracts.includes(id)||state.contracts.length>=(state.maxContracts||1))return;state.pendingHost=id;runLines(S.hosts[id].intro,"contactChoice");}
-  function renderContactChoice(){var id=state.pendingHost,h=S.hosts[id];if(!h){state.phase="selection";render();return;}bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);var html='<div class="screen-card wide"><div class="micro">CONNECTION REQUEST / '+esc(h.name)+'</div><h2 class="screen-heading">Ngươi sẽ nói gì?</h2><p class="screen-description">'+esc(h.desc)+'</p><div class="button-stack">';h.options.forEach(function(o,i){html+='<button class="choice-btn" data-action="reply" data-option="'+i+'" '+(state.energy+o.energy<0?'disabled':'')+'><span><span class="choice-number">0'+(i+1)+'.</span>'+esc(o.label)+'</span><span>›</span></button>';});html+='</div><button class="secondary-btn" style="margin-top:12px" data-action="defer">TẠM HOÃN LIÊN LẠC ↗</button></div>';content.innerHTML=html;}
-  function reply(i){
-    var id=state.pendingHost,h=S.hosts[id],o=h&&h.options[i];if(!o)return;
-    if(state.energy+o.energy<0){notify("Không đủ linh năng");return;}
-    state.energy+=o.energy;
-    state.trust[id]=Math.min(100,Math.max(0,state.trust[id]+o.trust));
-    state.flags[o.flag]=true;
-    var said={
-      lieu:[
-        "Ta là hệ thống bàn tay vàng. Ngươi không cần coi ta là sư phụ. Ta có thể giúp ngươi, nếu ngươi bằng lòng.",
-        "Ta có thể cho ngươi một cơ hội. Năm khối linh thạch này là lời chứng minh đầu tiên; ngươi không cần trả lại.",
-        "Ta biết ngươi đang thắc mắc. Nhưng thử đoán xem ta là ai?"
-      ],
-      mac:[
-        "Có linh thạch. Ta cho ngươi năm khối trước; còn khế ước, chúng ta sẽ nói rõ điều kiện.",
-        "Trong nguyên tác, bảy ngày nữa ngươi sẽ gặp tử kiếp. Ta biết nơi và người liên quan.",
-        "Không có. Hệ thống cũng nghèo như ngươi."
-      ],
-      ta:[
-        "Ta sở hữu một bản ghi toàn bộ nguyên tác của thế giới này. Ta có thể chia sẻ để cùng ngươi kiểm chứng.",
-        "Trong nguyên tác, ngươi sẽ hy sinh vì Thanh Vân Tông. Nhưng những trang sách chưa chắc là kết cục của ngươi.",
-        "Ta biết một loại trà ngươi chưa từng uống. Ngươi có muốn thử cùng ta không?"
-      ]
-    };
-    var b=id==="mac"?"market":id==="ta"?"mountain":"sect";
-    var speak={s:"HỆ THỐNG",t:said[id][i],b:b,p:id};
-    runLines([speak].concat(o.reply),"contractPrompt");
-  }
-  function renderContractPrompt(){var id=state.pendingHost,h=S.hosts[id];if(!h){state.phase="selection";render();return;}bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);content.innerHTML='<div class="screen-card"><div class="micro">CONTRACT PROTOCOL / CONSENT</div><h2 class="screen-heading">Đề nghị khế ước với '+esc(h.name)+'</h2><p class="screen-description">Khế ước chỉ hình thành nếu người kia chấp thuận. Một ký chủ sẽ không tự động biết những khế ước khác.</p><div class="button-stack"><button class="primary-btn" data-action="sign">ĐỀ NGHỊ KÝ KHẾ ƯỚC <span>↗</span></button><button class="secondary-btn" data-action="defer">ĐỂ HỌ SUY NGHĨ THÊM <span>↗</span></button></div></div>';}
-  function sign(){var id=state.pendingHost;if(!id||state.contracts.includes(id)||state.contracts.length>=(state.maxContracts||1))return;state.contracts.push(id);state.activeHost=id;state.pendingHost=null;state.flags["signed_"+id]=true;runLines(S.hosts[id].signed,"hub");}
-  function defer(){state.pendingHost=null;state.phase=state.contracts.length?"hub":"selection";persist();render();}
-  function renderHub(){
-    var id=state.activeHost,host=id&&S.hosts[id],remaining=Math.max(0,8-state.day),limit=state.maxContracts||1;
-    bg(id==="mac"?"market":id==="ta"?"mountain":"sect",id);
-    var refrain=host?"Giữa những trang sách đã được viết, "+host.name+" vẫn đang sống cuộc đời của mình. Ngươi có muốn nghe xem hôm nay đã xảy ra chuyện gì không?":"Một thế giới đang vận hành ngoài tầm mắt. Trước tiên, hãy lắng nghe một người.";
-    var title=state.day===1?"Khế ước đầu tiên":state.day<7?"Những ngày trước đại hội":state.day===7?"Đêm trước Đại Hội Vấn Đạo":"Người đáng lẽ phải chết";
-    var c='<div class="screen-card wide"><div class="micro">NGÀY '+String(state.day).padStart(2,"0")+' / CHƯƠNG 01 · THƯƠNG HUYỀN GIỚI</div><h2 class="screen-heading">'+title+'</h2><p class="screen-description">'+esc(refrain)+'</p>';
-    if(host)c+='<div class="info-strip">◈ ĐANG KẾT NỐI: <b>'+esc(host.name)+'</b> · '+esc(host.place)+' · '+(state.flags.macDead&&id==="mac"?'KHẾ ƯỚC ĐÃ CHẤM DỨT':'KHẾ ƯỚC ỔN ĐỊNH')+'</div>';
-    c+='<div class="button-stack">';
-    c+='<button class="choice-btn" data-action="talk" '+(!host||state.flags.macDead&&id==="mac"?'disabled':'')+'><span><span class="choice-number">01</span> Lắng nghe ký chủ hôm nay</span><span>›</span></button>';
-    c+='<button class="choice-btn" data-action="gift" '+(!host||state.energy<12||state.flags.macDead&&id==="mac"?'disabled':'')+'><span><span class="choice-number">02</span> Gửi một phần cơ duyên <small style="color:#9ebcaf">(−12 linh năng)</small></span><span>›</span></button>';
-    c+='<button class="choice-btn" data-action="archive"><span><span class="choice-number">03</span> Mở những trang nguyên tác</span><span>›</span></button>';
-    if(state.contracts.length<limit)c+='<button class="choice-btn" data-action="selection"><span><span class="choice-number">04</span> '+(state.contracts.length?'Tìm khế ước tiếp theo':'Tìm ký chủ đầu tiên')+'</span><span>›</span></button>';
-    c+='</div><div class="notice">'+(state.eventDone?'Chương demo đã kết thúc tại Đại Hội Vấn Đạo. Kết cục của những người còn lại vẫn chờ được viết.':state.day<4?'◷ Còn '+remaining+' ngày trước Đại Hội Vấn Đạo. Dòng thời gian chỉ tiến khi ngươi lựa chọn.':state.contracts.length<2?'◈ Một quyền hạn mới đã thức tỉnh. Ngươi có thể ký thêm một người, hoặc tiếp tục chỉ với ký chủ hiện tại.':'◈ Hai khế ước đang cùng tồn tại trong một thế giới. Mọi lựa chọn đều có thể giao nhau.')+'</div>';
-    c+='<div class="button-stack"><button class="primary-btn" data-action="advance" '+(state.contracts.length===0||state.eventDone?'disabled':'')+'>'+(state.day===7?'BƯỚC VÀO ĐẠI HỘI':state.eventDone?'CHƯƠNG NÀY ĐÃ KẾT THÚC':'KHÉP LẠI NGÀY NÀY')+' <span>↗</span></button></div></div>';
-    content.innerHTML=c;
-  }
-  function talk(){var id=state.activeHost;if(!id||state.flags.macDead&&id==="mac")return;var h=S.hosts[id];runLines([h.talk[(state.day+state.trust[id])%h.talk.length]],"hub");}
-  function gift(){var id=state.activeHost;if(!id||state.energy<12){notify("Không đủ linh năng hoặc chưa chọn ký chủ");return;}if(state.flags.macDead&&id==="mac")return;state.energy-=12;state.trust[id]=Math.min(100,state.trust[id]+5);runLines(S.hosts[id].gift,"hub");}
-  function advance(){
-    if(state.contracts.length===0){notify("Hãy ký ít nhất một khế ước trước");return;}
-    if(state.eventDone){notify("Bản demo đã kết thúc ở Đại Hội Vấn Đạo");return;}
-    if(state.day>=8)return;
-    state.day++;state.energy=Math.min(200,state.energy+18);
-    var lines,after="hub";
-    if(state.day===8){lines=S.daily[7].slice();after="eventChoice";}
-    else if(state.day===7){lines=[{s:"DẪN TRUYỆN",t:"Đêm cuối trước đại hội, những chiếc đèn lồng cháy suốt dọc con đường Thanh Vân Sơn. Ai cũng có điều muốn đạt được vào ngày mai.",b:"sect"},{s:"HỆ THỐNG",t:"Ta nhớ những gì nguyên tác viết. Nhưng chưa ai biết được ngày mai ký chủ của ta sẽ lựa chọn điều gì.",b:"sect"}];}
-    else{lines=(S.daily[state.day]||[]).slice();}
-    if(state.day===4&&state.maxContracts===1){
-      state.maxContracts=2;state.flags.secondContractUnlocked=true;
-      lines.push({s:"KÝ ỨC",t:"...Một người có thể nhớ một lời hứa. Nhưng nhiều người mới có thể ghi nhớ những cái tên đã mất...",b:"void"});
-      lines.push({s:"HỆ THỐNG",t:"Ta vừa nhớ thêm một điều. Ta không chỉ có thể ký khế ước với một người. Quyền hạn thứ hai... đã trở lại.",b:"void"});
-      lines.push({s:"HỆ THỐNG",t:"[Quyền hạn khế ước: 02/02 ô khả dụng.] [Ngươi có thể chủ động tìm kiếm ký chủ mới. Ký chủ hiện tại sẽ không tự động biết về người thứ hai.]",b:"void"});
-    }
-    if(state.day===2&&state.contracts.includes("lieu"))lines.push({s:"LIỄU THANH HÒA",t:"Hệ thống, ta đã ăn đủ bữa hôm nay. Không biết tại sao lại muốn kể ngươi nghe chuyện nhỏ như vậy.",b:"sect",p:"lieu"});
-    if(state.day===3&&state.contracts.includes("ta"))lines.push({s:"TẠ VẤN SƠN",t:"Ta muốn đọc thử ghi chép về Cửu Diệp Thanh Tâm. Đại hội thì cứ để đám trẻ tranh nhau.",b:"mountain",p:"ta"});
-    if(state.day===5&&state.contracts.includes("mac"))lines.push({s:"MẶC TỪ",t:"Cuốn cổ thư ta cần đã được đưa về Thanh Vân. Hệ thống, ngươi có kế hoạch nào không cần đánh nhau không?",b:"market",p:"mac"});
-    if(state.day===6&&state.contracts.includes("mac")&&!state.flags.macWarned)lines.push({s:"HỆ THỐNG",t:"[Cảnh báo: nguyên tác ghi nhận Mặc Từ tử vong trong Đại Hội. Ký chủ vẫn chưa được báo đầy đủ về tử kiếp.]",b:"event",p:"mac"});
-    if(state.day>=6&&state.day<=7&&state.contracts.includes("lieu")&&state.contracts.includes("mac")&&!state.flags.sharedSecret){after="day4Discovery";}
-    runLines(lines,after);
-  }
-  function renderDiscovery(){bg("market","lieu");content.innerHTML='<div class="screen-card wide"><div class="micro">CROSS-CONTRACT INCIDENT / DAY '+String(state.day).padStart(2,"0")+'</div><h2 class="screen-heading">Một dấu ấn, hai khế ước</h2><p class="screen-description">Liễu Thanh Hòa nhìn thấy Mặc Từ sử dụng lá phù mang cùng dấu ấn hệ thống. Cùng lúc ấy, cả hai gọi ngươi qua kênh liên lạc.</p><div class="info-strip">LIỄU: “Vì sao hắn có pháp khí giống của ta?”<br>MẶC TỪ: “Này, cô nương kia cứ nhìn ta. Ngươi biết gì à?”</div><div class="button-stack"><button class="choice-btn" data-action="discovery" data-option="truth">01 · NÓI THẬT: Cả hai đều là ký chủ của ta. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="half">02 · NÓI MỘT PHẦN: Đây là dấu ấn pháp khí chung. <span>›</span></button><button class="choice-btn" data-action="discovery" data-option="silent">03 · GIỮ IM LẶNG: Để họ tự suy luận. <span>›</span></button></div></div>';}
-  function discovery(k){var lines;if(k==="truth"){state.flags.sharedSecret="revealed";state.trust.lieu=Math.min(100,state.trust.lieu+7);state.trust.mac=Math.min(100,state.trust.mac+4);lines=[{s:"HỆ THỐNG",t:"[Đã thông báo về khế ước chung cho Liễu Thanh Hòa và Mặc Từ.]",b:"market"},{s:"LIỄU THANH HÒA",t:"...Hai người? Vậy ngươi cũng từng nói với hắn những lời như nói với ta?",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Khoan, vậy ta có được giảm giá khi mua đồ trong cửa hàng hệ thống không?",b:"market",p:"mac"}];}
-    else if(k==="half"){state.flags.sharedSecret="suspected";lines=[{s:"HỆ THỐNG",t:"[Đã cung cấp giải thích một phần: pháp khí cùng xuất xứ có chung dấu ấn.]",b:"market"},{s:"LIỄU THANH HÒA",t:"Nghe có lý. Nhưng sao lúc nãy ngươi ngập ngừng?",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Ngươi nói không sai... nhưng cũng chẳng giống câu trả lời đầy đủ cho lắm.",b:"market",p:"mac"}];}
-    else{state.flags.sharedSecret="hidden";lines=[{s:"DẪN TRUYỆN",t:"Hệ thống không trả lời. Hai người từ xa nhìn nhau giữa đám đông phường thị.",b:"market"},{s:"LIỄU THANH HÒA",t:"Nếu ngươi không nói... ta sẽ tự tìm hiểu.",b:"market",p:"lieu"},{s:"MẶC TỪ",t:"Ha. Hình như ta vừa phát hiện một chuyện hay ho.",b:"market",p:"mac"}];}
-    runLines(lines,"hub");
-  }
-  function renderEventChoice(){bg("event","mac");var mac=state.contracts.includes("mac");content.innerHTML='<div class="screen-card wide"><div class="micro">ORIGINAL CHAPTER 136 / CRITICAL EVENT</div><h2 class="screen-heading">Người đáng lẽ phải chết</h2><p class="screen-description">'+(mac?'Mặc Từ đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Lục Chiêu Dã tiến về phía sân đấu. Ngươi biết kết cục được viết trong nguyên tác.':'Mặc Từ — một ứng viên mà ngươi chưa ký — đang bị cuốn vào cuộc tranh đoạt cổ kiếm. Nguyên tác viết rằng hắn sẽ chết tại đây.')+'</p><div class="info-strip">[Cảnh báo] Chỉ có đủ thời gian để ra một quyết định. Không có cách nào chắc chắn kiểm soát toàn bộ nhân quả.</div><div class="button-stack"><button class="choice-btn" data-action="event" data-option="protect" '+(state.energy<30?'disabled':'')+'>01 · CAN THIỆP QUA KHẾ ƯỚC HIỆN CÓ (−30 LINH NĂNG) <span>›</span></button><button class="choice-btn" data-action="event" data-option="warn">02 · TÌM CÁCH GỬI CẢNH BÁO, ĐỂ NGƯỜI TRONG CUỘC TỰ QUYẾT <span>›</span></button><button class="choice-btn" data-action="event" data-option="observe">03 · KHÔNG CAN THIỆP, QUAN SÁT NGUYÊN TÁC <span>›</span></button></div></div>';}
-  function event(k){var mac=state.contracts.includes("mac"),lines=[];state.flags.intervention=k;state.eventDone=true;
-    if(k==="protect"){if(state.energy<30){notify("Không đủ linh năng");return;}state.energy-=30;state.flags.macOutcome="saved";if(mac)state.trust.mac=Math.min(100,state.trust.mac+15);lines=[{s:"HỆ THỐNG",t:"[Tiêu hao 30 linh năng.] [Đã kích hoạt một lần bảo hộ khẩn cấp thông qua liên kết hiện có.]",b:"event",p:"mac"},{s:"DẪN TRUYỆN",t:"Kiếm quang xé gió, nhưng người đáng lẽ ngã xuống vẫn còn đứng. Mặc Từ lùi lại, đôi mắt lần đầu không còn vẻ lười biếng.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"...Hệ thống. Món nợ này ta nhớ.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Đối chiếu nguyên tác: Mặc Từ tử vong.] [Hiện tại: Mặc Từ còn sống.] [Nhân quả đã phân nhánh.]",b:"event"}];}
-    else if(k==="warn"){state.flags.macOutcome="escaped";lines=[{s:"HỆ THỐNG",t:"[Đã chuyển lời cảnh báo qua liên kết hiện có. Không cưỡng ép hành động cá thể.]",b:"event"},{s:"DẪN TRUYỆN",t:"Mặc Từ nghe thấy cảnh báo, cắn răng bỏ cổ thư và chạy về phía lối phụ. Hắn thoát được, nhưng bị thương và mất thứ mình đến tìm.",b:"event",p:"mac"},{s:"MẶC TỪ",t:"Thứ kia còn có thể tìm lại. Mạng thì không. ...Ngươi nói đúng, lần này ta nợ ngươi.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Hiện tại: Mặc Từ còn sống, bị thương.] [Cổ thư: thất lạc.] [Nguyên tác đã sai lệch.]",b:"event"}];}
-    else{state.flags.macOutcome="dead";if(mac)state.flags.macDead=true;lines=[{s:"DẪN TRUYỆN",t:"Kiếm quang rơi xuống giữa tiếng hô hoán. Giống như trong những trang sách, một ma tu vô danh ngã xuống bên thềm đá.",b:"event",p:"mac"},{s:"HỆ THỐNG",t:"[Đối chiếu nguyên tác: phù hợp.] [Mặc Từ đã tử vong.] [Một khế ước đã chấm dứt.] ",b:"event"},{s:"DẪN TRUYỆN",t:"Đại hội vẫn tiếp diễn. Nhưng giờ đây ngươi hiểu rằng biết trước một cái chết và quyết định không thay đổi nó là hai chuyện khác nhau.",b:"event"}];}
-    lines.push({s:"KÝ ỨC",t:"...Đừng để những cái tên ấy... biến mất không một ai nhớ...",b:"void"});
-    lines.push({s:"HỆ THỐNG",t:"[Nhiệm vụ cấp cao: phát hiện mảnh ký ức mới.] [Trạng thái: vẫn bị niêm phong.] [Đã ghi nhận diễn biến của một cá thể ngoài nguyên tác ban đầu.]",b:"void"});
-    runLines(lines,"ending");
-  }
-  function renderEnding(){bg("void");$("scenePortrait").innerHTML="";var outcome=state.flags.macOutcome==="dead"?"Mặc Từ đã chết đúng như nguyên tác.":state.flags.macOutcome==="saved"?"Mặc Từ đã sống sót nhờ can thiệp trực tiếp.":"Mặc Từ đã thoát khỏi tử kiếp nhưng đánh mất cổ thư.";content.innerHTML='<div class="screen-card"><div class="micro">DEMO / CHAPTER 00 COMPLETE</div><div class="ornament">✦ · ◈ · ✦</div><h2 class="main-title">NGOẠI TRUYỆN<br>ĐÃ BẮT ĐẦU</h2><p class="sub-title">'+esc(outcome)+' Các ký chủ khác sẽ còn những câu chuyện riêng. Nhiệm vụ thật sự của ngươi vẫn chưa được khôi phục.</p><div class="info-strip">Bản thử nghiệm kết thúc tại Đại Hội Vấn Đạo. Các chương tiếp theo, bộ nguyên tác hoàn chỉnh và hệ thống tu luyện sâu sẽ được phát triển sau.</div><div class="button-stack"><button class="primary-btn" data-action="hub">TRỞ VỀ TRUNG TÂM <span>↗</span></button><button class="secondary-btn" data-action="restart">CHƠI LẠI TỪ ĐẦU <span>↺</span></button></div></div>';}
-  function modal(title,html){$("modalTitle").textContent=title;$("modalBody").innerHTML=html;$("modal").classList.remove("hidden");$("modalClose").focus();}
-  function closeModal(){$("modal").classList.add("hidden");}
-  function showArchive(){
-    var entries=S.archive.map(function(o){return '<div class="archive-entry"><small>'+esc(o.meta)+'</small><br><strong>'+esc(o.title)+'</strong><p>'+esc(o.body)+'</p></div>';}).join("");
-    if(state.flags.macOutcome)entries+='<div class="archive-entry"><small>DIỄN BIẾN HIỆN TẠI</small><br><strong>Đại Hội Vấn Đạo — Kết quả thay đổi</strong><p>'+esc(state.flags.macOutcome==="dead"?"Mặc Từ tử vong như nguyên tác.":state.flags.macOutcome==="saved"?"Mặc Từ đã được cứu và còn sống.":"Mặc Từ thoát chết nhưng mất cổ thư.")+'</p></div>';
-    modal("Thư Viện Nguyên Tác",'<p class="modal-intro">Hệ thống nắm toàn bộ 1.286 chương của tiểu thuyết trong thế giới truyện. Đây là mục lục của bản demo với những trích lục quan trọng, không phải toàn văn tiểu thuyết.</p>'+entries);
-  }
-  function showLog(){var html=state.log.length?state.log.slice(-50).map(function(o){return '<div class="log-item"><strong>'+esc(o.s)+'</strong> — '+esc(o.t)+'</div>';}).join(""):'<p class="modal-intro">Chưa có hội thoại nào.</p>';modal("Nhật Ký Hội Thoại",html);}
-  function switchHost(id){if(!state.contracts.includes(id))return;if(state.phase==="dialogue"){notify("Hãy đọc xong đoạn hội thoại hiện tại");return;}state.activeHost=id;state.phase="hub";persist();render();}
-  function toHub(){if(state.phase==="dialogue"){notify("Hãy đọc xong đoạn hội thoại hiện tại");return;}if(state.phase==="title"){start();return;}state.phase=state.contracts.length?"hub":"selection";persist();render();}
-  function restart(){if(window.confirm("Xóa tiến trình bản demo và bắt đầu lại từ đầu?")){state=fresh();persist();render();notify("Đã tạo tiến trình mới");}}
-  document.addEventListener("click",function(e){
-    var b=e.target.closest("[data-action]");if(!b)return;var a=b.dataset.action;
-    if(a==="start")start();else if(a==="selection"){state.phase="selection";persist();render();}
-    else if(a==="contact")contact(b.dataset.host);else if(a==="reply")reply(Number(b.dataset.option));
-    else if(a==="sign")sign();else if(a==="defer")defer();else if(a==="hub")toHub();
-    else if(a==="talk")talk();else if(a==="gift")gift();else if(a==="advance")advance();
-    else if(a==="discovery")discovery(b.dataset.option);else if(a==="event")event(b.dataset.option);
-    else if(a==="archive")showArchive();else if(a==="switch")switchHost(b.dataset.host);
-    else if(a==="restart")restart();
-  });
-  $("dialogue").addEventListener("click",function(e){if(e.target.closest("#nextBtn"))return;next();});
-  $("nextBtn").addEventListener("click",next);
-  $("continueBtn").addEventListener("click",function(){if(state.phase==="dialogue")next();else if(state.phase==="title")start();else if(state.phase==="hub")advance();else if(state.phase==="selection")notify("Chọn một ứng viên để bắt đầu liên lạc");else toHub();});
-  $("archiveBtn").addEventListener("click",showArchive);$("logBtn").addEventListener("click",showLog);
-  $("panelToggle").addEventListener("click",function(){var open=document.body.classList.toggle("show-status");this.setAttribute("aria-expanded",String(open));});
-  $("saveBtn").addEventListener("click",function(){persist();notify("Đã lưu tiến trình trong trình duyệt");});
-  $("settingsBtn").addEventListener("click",function(){sound=!sound;$("settingsBtn").textContent=sound?"♫":"♪";notify(sound?"Đã bật âm thanh UI":"Đã tắt âm thanh UI");beep();});
-  $("modalClose").addEventListener("click",closeModal);
-  $("modal").addEventListener("click",function(e){if(e.target===$("modal"))closeModal();});
-  document.addEventListener("keydown",function(e){
-    if(e.key==="Escape"&&!$("modal").classList.contains("hidden")){closeModal();return;}
-    if(!$("modal").classList.contains("hidden"))return;
-    if(state.phase==="dialogue"&&(e.key===" "||e.key==="Enter")){e.preventDefault();next();}
-    if((state.phase==="contact-choice"||state.phase==="discovery-choice"||state.phase==="event-choice")&&/^[1-3]$/.test(e.key)){var buttons=content.querySelectorAll(".choice-btn");if(buttons[Number(e.key)-1]&&!buttons[Number(e.key)-1].disabled)buttons[Number(e.key)-1].click();}
-  });
-  if(state.phase==="dialogue"&&(!Array.isArray(state.queue)||!state.queue.length))state.phase=state.contracts.length?"hub":"selection";
-  render();
+/* Thiên Mệnh Ngoại Truyện v0.4 — sự kiện và lựa chọn, không có đồng hồ/ngày.
+ * Không phụ thuộc framework, API hay server; lưu tiến trình bằng localStorage. */
+(function(){
+"use strict";
+const story=window.NOVEL,art=window.NOVEL_ART;
+const $=id=>document.getElementById(id);
+if(!story||!art){document.body.textContent="Không thể tải kịch bản hoặc đồ họa. Hãy làm mới trang.";return;}
+const SAVE="thien-menh-vn-event-v4";
+const fresh=()=>({node:"cover",idx:0,contracts:[],primary:null,prospect:null,preview:null,trust:{lieu:0,mac:0,ta:0},flags:{},applied:{},expressions:{},lastLogged:"",log:[],sound:false});
+let state=fresh(),typing=false,typingTimer=null,fullText="",activeBg="",toastTimeout=null,audio=null,modalOpen=false;
+try{const raw=JSON.parse(localStorage.getItem(SAVE)||"null");if(raw&&typeof raw.node==="string"&&(story.nodes[raw.node]||raw.node==="cover")&&Array.isArray(raw.contracts))state={...fresh(),...raw,flags:raw.flags||{},trust:raw.trust||fresh().trust,applied:raw.applied||{},expressions:raw.expressions||{}};}catch(e){}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function persist(){try{localStorage.setItem(SAVE,JSON.stringify(state));}catch(e){}}
+function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>$("toast").classList.remove("show"),2300);}
+function sound(){if(!state.sound)return;try{const A=window.AudioContext||window.webkitAudioContext;audio=audio||new A();let osc=audio.createOscillator(),gain=audio.createGain();osc.type="sine";osc.frequency.value=640;gain.gain.value=.013;osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.025);}catch(e){}}
+function apply(e){
+ if(!e)return;
+ if(e.flag)state.flags[e.flag]=true;
+ if(e.flags)for(const f of e.flags)state.flags[f]=true;
+ if(e.trust)for(const k of Object.keys(e.trust))state.trust[k]=(state.trust[k]||0)+e.trust[k];
+ if(e.contract&&!state.contracts.includes(e.contract)){
+   if(state.contracts.length>=2)throw Error("Không thể ký quá hai khế ước trong demo.");
+   state.contracts.push(e.contract);
+   if(!state.primary)state.primary=e.contract;
+   toast("✧ Ký kết thành công với "+story.hosts[e.contract].name);
+ }
+ if(e.unlockSecond)state.flags.secondUnlocked=true;
+}
+function go(id){
+ if(id==="$after_arc")id=state.contracts.length<2?"second_offer":"cross_intro";
+ if(!story.nodes[id]){console.error("Unknown scene:",id);return;}
+ state.node=id;state.idx=0;state.lastLogged="";
+ const node=story.nodes[id];
+ if(node.effect&&!state.applied[id]){apply(node.effect);state.applied[id]=true;}
+ if(node.special==="select")state.preview=state.contracts.length===0?"lieu":(["lieu","mac","ta"].find(x=>!state.contracts.includes(x))||"lieu");
+ persist();render();
+}
+function current(){return story.nodes[state.node];}
+function names(w){return {narrator:"Dẫn truyện",memory:"Ký ức còn sót",system:"Hệ thống · Ngươi",interface:"Thông báo hệ thống",lieu:"Liễu Thanh Hòa",mac:"Mặc Từ",ta:"Tạ Vấn Sơn",luc:"Lục Chiêu Dã"}[w]||"Dẫn truyện";}
+function scenePlace(k){return {void:"Không gian vô định",stars:"Tinh không Thương Huyền",clouds:"Một thế giới đang sống",sect:"Thanh Vân Tông",archive:"Kho hồ sơ cũ",garden:"Dược viên Thanh Vân",market:"Phường Vân Kiều",inn:"Quán trọ dưới chân núi",forest:"Đường núi Huyết Vụ",tower:"Vấn Sơn Phong",library:"Tàng Thư Các",night:"Đêm Thương Huyền Giới"}[k]||"Thương Huyền Giới";}
+function sceneChapter(){
+ const id=state.node;
+ if(id==="cover")return "THIÊN MỆNH NGOẠI TRUYỆN";
+ if(id==="ending"||id==="epilogue")return "HỒI KẾT / NGOẠI TRUYỆN";
+ if(id.startsWith("li_"))return "TUYẾN TRUYỆN / LIỄU THANH HÒA";
+ if(id.startsWith("ma_"))return "TUYẾN TRUYỆN / MẶC TỪ";
+ if(id.startsWith("ta_"))return "TUYẾN TRUYỆN / TẠ VẤN SƠN";
+ if(id.startsWith("cross"))return "GIAO THOA / KHẾ ƯỚC";
+ if(id.startsWith("second"))return "KÝ ỨC MỚI / KHẾ ƯỚC";
+ return "CHƯƠNG 00 / THỨC TỈNH";
+}
+const pairKey=()=>state.contracts.slice().sort().join("-");
+const pairExtra={
+ "lieu-mac":{
+   truth:[{who:"lieu",text:"...Thì ra không phải chỉ có mình ta. Ngươi giấu vì sợ ta nghĩ nhiều sao?",expression:"thoughtful"},{who:"mac",text:"Khoan. Hai người dùng chung một hệ thống? Vậy phí sử dụng có chia đôi không?",expression:"smirk"}],
+   evade:[{who:"lieu",text:"Ta sẽ tự tìm hiểu phần còn lại.",expression:"focused"},{who:"mac",text:"Ngươi giấu cũng vụng đấy. Ta có thể giúp giấu, nếu ngươi nói cho ta biết lý do.",expression:"thinking"}],
+   silent:[{who:"lieu",text:"Ngươi không muốn nói. Không sao. Ta sẽ hỏi hắn.",expression:"focused"},{who:"mac",text:"Có vẻ ta và cô nương này cần nói chuyện riêng rồi.",expression:"smirk"}]
+ },
+ "lieu-ta":{
+   truth:[{who:"lieu",text:"Vậy tiền bối cũng có thể nghe được ngươi?",expression:"surprised"},{who:"ta",text:"Lão phu có nghe. Nhưng chuyện này tốt hay xấu thì còn phải hỏi chính tiểu hữu ấy.",expression:"smile"}],
+   evade:[{who:"ta",text:"Câu trả lời thiếu một nửa. Nhưng lão phu không ép.",expression:"thoughtful"},{who:"lieu",text:"Ta sẽ nhớ điều này. Có lẽ sẽ có ngày ta hỏi lại.",expression:"focused"}],
+   silent:[{who:"ta",text:"Hai bên im lặng. Thế thì chúng ta uống trà, tự bàn chuyện của mình.",expression:"amused"},{who:"lieu",text:"...Chuyện này lại càng đáng nghi.",expression:"thinking"}]
+ },
+ "mac-ta":{
+   truth:[{who:"mac",text:"Một hệ thống dùng chung với đại năng Hóa Thần? Vậy ta không được chiết khấu linh thạch à?",expression:"smirk"},{who:"ta",text:"Ha ha. Ta lại thấy kẻ không có linh thạch này rất thú vị.",expression:"happy"}],
+   evade:[{who:"ta",text:"Tiểu hữu đang tránh nói dối mà cũng chưa muốn nói thật. Lão phu hiểu.",expression:"thoughtful"},{who:"mac",text:"Được, ta cũng sẽ giữ bí mật của mình.",expression:"wary"}],
+   silent:[{who:"mac",text:"Ông già, hay chúng ta thử hỏi cùng một câu?",expression:"smirk"},{who:"ta",text:"Được. Lão phu đang muốn xem điều gì xảy ra.",expression:"amused"}]
+ }
+};
+function linesFor(id,node){
+ let lines=node.lines?node.lines.slice():[];
+ if(id==="cross_pair"){const key=pairKey(),extra=story.pairScenes[key]||[];lines=lines.concat(extra);}
+ if(["cross_truth","cross_evasion","cross_silent"].includes(id)){
+   const x=pairExtra[pairKey()];if(x){const response=x[id==="cross_truth"?"truth":id==="cross_evasion"?"evade":"silent"];const end=lines.pop();lines=lines.concat(response,end); }
+ }
+ return lines;
+}
+function bg(k){if(activeBg!==k){$("background").innerHTML=art.background(k);activeBg=k;}$("locationText").textContent=scenePlace(k);$("chapterText").textContent=sceneChapter();}
+function portraitFor(line,nodeId){
+ if(["void","stars"].includes(current()?.scene)&&!["cross_intro","epilogue"].includes(nodeId))return [];
+ if(nodeId==="world_luc")return ["luc"];
+ if(nodeId.startsWith("li_"))return ["lieu"];
+ if(nodeId.startsWith("ma_"))return ["mac"];
+ if(nodeId.startsWith("ta_"))return ["ta"];
+ if(nodeId.startsWith("cross"))return state.contracts.slice(0,2);
+ if(nodeId==="pre_select")return ["lieu","mac"];
+ return [];
+}
+function drawCharacters(list){
+ const ids=list.filter(x=>story.hosts[x]);
+ $("characterLayer").innerHTML=ids.map((id,i)=>{
+   const both=ids.length>1;const cls=both?(i===0?"duo-left":"duo-right"):"solo";
+   const expr=state.expressions[id]||"soft";
+   return '<div class="character '+cls+'"><div class="name-float">'+esc(story.hosts[id].name)+'</div>'+art.chibi(id,expr,i===0&&both?"left":"right")+'</div>';
+ }).join("");
+}
+function setScene(node,line){
+ bg(node.scene||"stars");
+ if(line&&story.hosts[line.who]&&line.expression)state.expressions[line.who]=line.expression;
+ const visible=portraitFor(line,state.node);
+ drawCharacters(visible);
+ $("statusLabel").textContent=state.contracts.length?"✦ "+state.contracts.length+" KHẾ ƯỚC ĐANG KẾT NỐI":"✧ CHƯA KÝ KHẾ ƯỚC";
+ $("footerText").textContent=state.contracts.length?state.contracts.map(x=>story.hosts[x].name).join(" · "):"Một trang sách chưa được viết";
+}
+function hidePanels(){clearInterval(typingTimer);typing=false;$("dialogueBox").classList.add("hidden");$("sceneContent").innerHTML="";}
+function typeLine(str){
+ fullText=str;$("dialogueText").textContent="";typing=true;
+ clearInterval(typingTimer);
+ const reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if(reduced){finishType();return;}
+ let i=0;typingTimer=setInterval(()=>{i=Math.min(str.length,i+2);$("dialogueText").textContent=str.slice(0,i);if(i>=str.length)finishType();},22);
+}
+function finishType(){clearInterval(typingTimer);typing=false;$("dialogueText").textContent=fullText;}
+function renderLine(node,lines){
+ const item=lines[state.idx];hidePanels();setScene(node,item);
+ $("speakerName").textContent=names(item.who);
+ $("dialogueBox").dataset.tone=item.who;
+ $("dialogueProgress").textContent=String(state.idx+1).padStart(2,"0")+" / "+String(lines.length).padStart(2,"0");
+ $("dialogueBox").classList.remove("hidden");
+ typeLine(item.text);
+ const key=state.node+":"+state.idx;
+ if(state.lastLogged!==key){state.log.push({who:item.who,text:item.text});if(state.log.length>150)state.log=state.log.slice(-150);state.lastLogged=key;}
+ persist();
+}
+function showOverlay(html,node,portraits=[]){hidePanels();setScene(node||current()||{scene:"clouds"},null);if(portraits.length)drawCharacters(portraits);$("sceneContent").innerHTML=html;}
+function renderChoices(node){
+ const count=node.choices.length;
+ const last=story.nodes[state.node].lines?.slice(-1)[0];
+ const prompt=last?.who==="narrator"?"Ngươi muốn làm gì tiếp?":"Ngươi sẽ đáp lại thế nào?";
+ const html='<section class="overlay-card"><span class="micro">✧ LỰA CHỌN / '+count+' HƯỚNG</span><h2 class="section-title">'+prompt+'</h2><p class="small-copy">Mỗi lời nói đều có thể được ký chủ ghi nhớ. Họ vẫn có quyền không làm theo ngươi.</p><div class="overlay-actions">'+node.choices.map((c,i)=>'<button type="button" class="choice-btn" data-action="choice" data-index="'+i+'"><span><span class="number">'+String(i+1).padStart(2,"0")+'.</span>'+esc(c.label)+'</span><span>›</span></button>').join("")+'</div></section>';
+ showOverlay(html,node);
+}
+function showSelection(){
+ const second=state.contracts.length===1;
+ const ids=["lieu","mac","ta"].filter(id=>!state.contracts.includes(id)),selected=ids.includes(state.preview)?state.preview:ids[0];
+ state.preview=selected;
+ const host=story.hosts[selected];
+ const cards=ids.map(id=>{const h=story.hosts[id];return '<button type="button" data-action="preview" data-host="'+id+'" class="candidate-card '+(selected===id?"active":"")+'"><div class="candidate-sprite">'+art.chibi(id,selected===id?"smile":"soft")+'</div><div class="candidate-meta"><strong>'+esc(h.name)+'</strong><span>'+esc(h.title)+'</span><em>'+esc(h.realm)+'</em></div></button>';}).join("");
+ const html='<section class="overlay-card selection-card"><span class="micro">✧ '+(second?"QUYỀN HẠN THỨ HAI":"KHẾ ƯỚC ĐẦU TIÊN")+' / '+ids.length+' ỨNG VIÊN</span><h2 class="section-title">'+(second?"Một tiếng nói khác đang chờ.":"Chọn người ngươi muốn lắng nghe.")+'</h2><p class="small-copy">'+(second?"Ngươi đã đồng hành với một người. Những người còn lại vẫn có cuộc sống và quyết định riêng.":"Chỉ được tiếp xúc với một người lúc đầu. Hãy nhìn xem họ đang làm gì, rồi quyết định sẽ lên tiếng với ai.")+'</p><div class="candidate-list">'+cards+'</div><div class="profile-detail"><strong>'+esc(host.name)+' — '+esc(host.mark)+'</strong><p>'+esc(host.intro)+'</p></div><div class="split-actions"><button class="ghost-btn" type="button" data-action="archive">XEM NGUYÊN TÁC ▤</button><button class="big-btn" type="button" data-action="selectHost" data-host="'+selected+'">LẮNG NGHE NGƯỜI NÀY ›</button></div></section>';
+ showOverlay(html,current());
+}
+function showCrossChoice(){
+ const html='<section class="overlay-card"><span class="micro">⚘ HAI KHẾ ƯỚC / CÙNG MỘT THẾ GIỚI</span><h2 class="section-title">Họ đã nghe thấy một dấu hiệu chung.</h2><p class="small-copy">Hai ký chủ đang tự nói chuyện với nhau. Ngươi có thể trả lời, không thể ép họ tin.</p><div class="overlay-actions"><button class="choice-btn" data-action="goto" data-next="cross_truth"><span><span class="number">01.</span> Thành thật: “Cả hai ngươi đều là ký chủ của ta.”</span><span>›</span></button><button class="choice-btn" data-action="goto" data-next="cross_evasion"><span><span class="number">02.</span> Nói một phần: “Dấu ấn ấy do ta tạo ra.”</span><span>›</span></button><button class="choice-btn" data-action="goto" data-next="cross_silent"><span><span class="number">03.</span> Không xen vào cuộc đối thoại của họ.</span><span>›</span></button></div></section>';
+ showOverlay(html,current(),state.contracts.slice(0,2));
+}
+function showCover(){
+ bg("clouds");drawCharacters(["lieu","mac"]);$("statusLabel").textContent="✦ VISUAL NOVEL · 0.4";$("chapterText").textContent="BẢN DEMO / NGOẠI TRUYỆN";$("sceneContent").innerHTML='<section class="overlay-card cover-card"><div class="cover-symbol">命</div><span class="micro">✦ A CULTIVATION VISUAL NOVEL ✦</span><h1>Thiên Mệnh<br>Ngoại Truyện</h1><p>Ngươi không phải người được chọn. Ngươi là hệ thống vừa thức tỉnh — và chẳng còn nhớ vì sao mình cần tìm ký chủ.</p><button class="big-btn" type="button" data-action="start" style="margin:auto;max-width:300px">BẮT ĐẦU CÂU CHUYỆN <span>✧</span></button><p class="small-copy" style="font:11px var(--ui);margin-top:17px">Không có đồng hồ đếm ngày · Người trong thế giới tự lựa chọn con đường của mình</p></section>';
+ $("dialogueBox").classList.add("hidden");
+ $("footerText").textContent="Những cuộc đời nằm ngoài trang sách";
+}
+function showEnding(){
+ const ids=state.contracts;
+ const summary=ids.map(id=>'<div class="status-entry"><div class="mini-chibi">'+art.chibi(id,"smile")+'</div><div><strong>'+esc(story.hosts[id].name)+'</strong><p>'+esc(story.hosts[id].title)+'</p><span>Vẫn có con đường và những bí mật riêng.</span></div></div>').join("");
+ const html='<section class="overlay-card"><span class="micro">◈ CHƯƠNG 0 / BẢN DEMO ĐÃ KẾT THÚC</span><h2 class="section-title">Ngoại truyện chỉ vừa bắt đầu.</h2><p class="small-copy">Ngươi đã thức tỉnh, nhớ lại một phần nhiệm vụ và gặp '+ids.length+' ký chủ. Những cuộc đời ấy sẽ tiếp tục vận hành — dù ngươi có quan sát hay không.</p><div class="status-list">'+summary+'</div><div class="split-actions"><button class="ghost-btn" type="button" data-action="journal">XEM HỘI THOẠI ☷</button><button class="big-btn" type="button" data-action="restart">CHƠI LẠI ↺</button></div><p class="small-copy" style="margin-top:12px">Bản tiếp theo sẽ mở rộng tuyến nguyên tác, nhiệm vụ ẩn và nhiều biến cố do ký chủ tự khởi xướng.</p></section>';
+ showOverlay(html,current());
+}
+function render(){
+ const id=state.node;
+ if(id==="cover"){showCover();return;}
+ const node=current();
+ if(!node){state.node="cover";persist();showCover();return;}
+ const lines=linesFor(id,node);
+ if(state.idx<lines.length){renderLine(node,lines);return;}
+ if(node.special==="select"){showSelection();return;}
+ if(node.special==="cross"){showCrossChoice();return;}
+ if(node.special==="ending"){showEnding();return;}
+ if(node.choices){renderChoices(node);return;}
+ if(node.next){go(node.next);return;}
+ showEnding();
+}
+function advance(){
+ if(modalOpen)return;
+ if(state.node==="cover")return;
+ const node=current();if(!node)return;
+ const lines=linesFor(state.node,node);
+ if(state.idx>=lines.length)return;
+ if(typing){finishType();return;}
+ sound();state.idx++;state.lastLogged="";
+ persist();render();
+}
+function choose(i){const node=current(),opt=node?.choices?.[i];if(!opt)return;apply(opt.effect);sound();go(opt.next);}
+function selectHost(id){
+ const node=current();
+ if(node?.special!=="select")return;
+ if(state.contracts.includes(id)||!["lieu","mac","ta"].includes(id)||state.contracts.length>=2)return;
+ if(state.contracts.length===1&&!state.flags.secondUnlocked)return;
+ state.prospect=id;sound();go(story.hostFirst[id]);
+}
+function openModal(title,inner){
+ $("modalTitle").textContent=title;$("modalBody").innerHTML=inner;$("modal").classList.remove("hidden");modalOpen=true;$("closeModal").focus();
+}
+function closeModal(){$("modal").classList.add("hidden");modalOpen=false;}
+function archive(){
+ const html='<p class="small-copy">Ngươi đã nhớ toàn bộ nguyên tác, nhưng thế giới không chỉ có những người tác giả nhắc đến. Những mục dưới đây là trích lục dành cho bản demo, không phải toàn văn 1.286 chương.</p>'+story.library.map(x=>'<div class="book-entry"><strong>'+esc(x.title)+'</strong><p>'+esc(x.body)+'</p></div>').join("")+'<h3 class="section-title" style="font-size:20px;margin-top:22px">Số phận trong nguyên tác</h3>'+Object.keys(story.hosts).map(id=>'<div class="book-entry"><strong>'+esc(story.hosts[id].name)+'</strong><p>'+esc(story.hosts[id].orig)+'</p></div>').join("");
+ openModal("Thư viện nguyên tác",html);
+}
+function journal(){const logs=state.log.slice(-90);const html=logs.length?logs.map(l=>'<div class="backlog-entry"><strong>'+esc(names(l.who))+'</strong><div>'+esc(l.text)+'</div></div>').join(""):'<p class="small-copy">Chưa có đoạn thoại nào được lưu.</p>';openModal("Nhật ký hội thoại",html);}
+function menu(){
+ const data='<p class="small-copy">Game tự lưu mỗi khi diễn biến thay đổi. Các đoạn kịch bản được kích hoạt bởi lựa chọn và hành động của ký chủ, không phải nút chuyển ngày.</p>'
+ +'<div class="book-entry"><strong>Tiến trình</strong><p>'+esc(state.contracts.length?state.contracts.map(x=>story.hosts[x].name).join(" · "):"Chưa có khế ước")+'</p><p>Quyền hạn thứ hai: '+(state.flags.secondUnlocked?"Đã mở":"Chưa khôi phục")+'</p></div>'
+ +'<div class="overlay-actions"><button class="choice-btn" data-action="save"><span>◇ Lưu tiến trình ngay</span><span>✓</span></button><button class="choice-btn" data-action="sound"><span>♫ Âm thanh giao diện: '+(state.sound?"BẬT":"TẮT")+'</span><span>›</span></button><button class="choice-btn" data-action="restart"><span>↺ Bắt đầu lại từ đầu</span><span>›</span></button></div>';
+ openModal("Cài đặt & tiến trình",data);
+}
+function restart(){if(window.confirm("Bắt đầu lại từ đầu? Tiến trình v0.4 hiện tại sẽ được thay thế.")){state=fresh();activeBg="";closeModal();persist();render();toast("Đã bắt đầu câu chuyện mới.");}}
+function dispatch(action,button){
+ if(action==="start"){go(story.intro);}
+ else if(action==="choice"){choose(Number(button.dataset.index));}
+ else if(action==="preview"){state.preview=button.dataset.host;persist();render();}
+ else if(action==="selectHost"){selectHost(button.dataset.host);}
+ else if(action==="goto"){go(button.dataset.next);}
+ else if(action==="archive"){archive();}
+ else if(action==="journal"){journal();}
+ else if(action==="menu"){menu();}
+ else if(action==="save"){persist();toast("Đã lưu tiến trình ♡");}
+ else if(action==="sound"){state.sound=!state.sound;persist();menu();toast(state.sound?"Âm thanh đã bật":"Âm thanh đã tắt");}
+ else if(action==="restart"){restart();}
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b){dispatch(b.dataset.action,b);}});
+$("nextBtn").addEventListener("click",e=>{e.stopPropagation();advance();});
+$("dialogueBox").addEventListener("click",advance);
+$("archiveBtn").addEventListener("click",archive);
+$("journalBtn").addEventListener("click",journal);
+$("menuBtn").addEventListener("click",menu);
+$("closeModal").addEventListener("click",closeModal);
+$("modal").addEventListener("click",e=>{if(e.target===$("modal"))closeModal();});
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&modalOpen){closeModal();return;}
+ if(modalOpen)return;
+ const tag=e.target?.tagName;
+ if((e.key===" "||e.key==="Enter")&&!["BUTTON","INPUT","TEXTAREA"].includes(tag)&&!e.ctrlKey){if(state.node!=="cover"){e.preventDefault();advance();}}
+ if(/^[1-4]$/.test(e.key)&&current()?.choices&&state.idx>=linesFor(state.node,current()).length){choose(Number(e.key)-1);}
+});
+persist();render();
 })();

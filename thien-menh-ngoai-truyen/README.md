@@ -1,48 +1,48 @@
-# Thiên Mệnh Ngoại Truyện — visual novel tu chân (bản thử nghiệm 0.2)
+# Thiên Mệnh Ngoại Truyện ✦ Visual Novel Tu Chân — demo v0.4
 
-Web visual novel bằng HTML, CSS, JavaScript thuần, không cần build hay server. Người chơi là Hệ Thống Bàn Tay Vàng, tỉnh dậy và bắt đầu nhớ lại một nhiệm vụ đã bị niêm phong, trước khi được giới thiệu Thương Huyền Giới — thế giới diễn sinh từ tiểu thuyết 《Kiếm Vấn Trường Sinh》.
+> Bạn là **Hệ Thống Bàn Tay Vàng** vừa thức tỉnh, biết toàn bộ nguyên tác 《Kiếm Vấn Trường Sinh》 nhưng không nhớ nhiệm vụ thực sự của mình. Thay vì điều khiển người khác như một game nuôi nhân vật, bạn đồng hành với những ký chủ có mục tiêu và suy nghĩ riêng.
 
-## Chạy game
+## Chơi online
 
-- Mở file index.html trên trình duyệt hiện đại, hoặc chạy một static server trong thư mục này: python3 -m http.server 8000, rồi vào http://localhost:8000.
-- Trên GitHub Pages, nếu repo mynovel đang publish từ nhánh main, thư mục / (root), đường dẫn sẽ là: https://mainhatanhee-a11y.github.io/mynovel/thien-menh-ngoai-truyen/
-- Nếu Pages chưa bật, mở Settings → Pages → Build and deployment → Deploy from a branch → main / (root). Việc bật Pages không thể thực hiện qua connector hiện tại.
-- Không cần API key, cơ sở dữ liệu hay đăng nhập. Game tự lưu vào localStorage của trình duyệt hiện tại.
+Trang game (khi GitHub Pages được bật cho nhánh main):
 
-## Nội dung bản demo
+https://mainhatanhee-a11y.github.io/mynovel/thien-menh-ngoai-truyen/
 
-1. Mở màn mới: thức tỉnh → ký ức về nhiệm vụ trở lại từng mảnh → nhiệm vụ cấp cao bị niêm phong → giới thiệu thế giới, nguyên tác và Thiên Mệnh Chi Tử → hướng dẫn ký khế ước.
-2. Ba ứng viên: Liễu Thanh Hòa, Mặc Từ, Tạ Vấn Sơn. Mỗi người có màn gặp gỡ, 3 lựa chọn lời đáp và đoạn ký khế ước riêng.
-3. Ban đầu chỉ được chọn một trong ba ký chủ. Khi ký ức khôi phục ở ngày thứ tư, hệ thống mới mở khóa ô khế ước thứ hai. Bảng chỉ số ẩn sau nút Hệ thống; tập trung vào khung hình và hội thoại.
-4. Thế giới chung: từng ngày đi tới Đại Hội Vấn Đạo; nếu ký Liễu Thanh Hòa và Mặc Từ sau khi mở khóa quyền hạn, sẽ gặp sự kiện hai người phát hiện khế ước chung vào ngày thứ sáu hoặc bảy.
-5. Phân nhánh thử nghiệm: lựa chọn cứu, cảnh báo hoặc đứng ngoài tử kiếp của Mặc Từ; kết quả được ghi trong thư viện nguyên tác.
-6. Nhật ký và lưu tiến trình: có thể xem lại hội thoại, lưu thủ công hoặc tiếp tục ngay khi tải lại trang.
+Trang chủ repository chuyển tiếp đến game. Website cũ được giữ nguyên tại ../old-site/ .
 
-## Điều khiển
+## Bản rework 0.4
 
-- Click vùng thoại, bấm Tiếp, Space hoặc Enter để hiển thị/tiếp tục.
-- Bấm 1 / 2 / 3 để chọn một trong ba lựa chọn trong những màn tương thích.
-- Nguyên tác đọc trích lục và so sánh biến cố; Nhật ký xem lại hội thoại; Lưu lưu thủ công.
-- Chọn chân dung ở bảng bên phải để chuyển ký chủ (ngoài đoạn thoại đang chạy).
-- Nút nhạc bật tiếng bíp giao diện nhỏ, không có bản nhạc có bản quyền.
+- **Bỏ hoàn toàn chuyển ngày / bấm để nuôi ký chủ.** Chuyện tiến lên qua những hành động mà ký chủ tự khởi xướng.
+- **Mở màn có nhịp chậm:** hệ thống thức tỉnh → nhớ về ký chủ và nhiệm vụ dang dở → học cách lập khế ước → khám phá thế giới diễn sinh từ tiểu thuyết → quan sát Thiên Mệnh Chi Tử → chọn ứng viên.
+- **Chỉ chọn một trong ba ký chủ ban đầu.** Hệ thống mở khả năng liên kết thứ hai sau một cột mốc của tuyến nhân vật đầu. Có thể từ chối ký thêm người.
+- **Ba tuyến mở đầu khác nhau:** Liễu Thanh Hòa tự đi tìm hồ sơ gia tộc; Mặc Từ tự đào tẩu khỏi ma môn; Tạ Vấn Sơn tự điều tra tấm bia ghi tên bị mất.
+- **Đối thoại có người nói rõ ràng.** Các lựa chọn được hiển thị là câu hệ thống thực sự phát biểu; ký chủ có thể phản đối hoặc làm điều khác với lời khuyên.
+- **Phân nhánh và giao thoa:** tổ hợp Liễu+Mặc, Liễu+Tạ, Mặc+Tạ có sự kiện chạm mặt riêng và lựa chọn có tiết lộ chuyện nhiều khế ước không.
+- **Giao diện cinematic chibi:** nhân vật SVG tự vẽ với biểu cảm, mái tóc, trang sức, trang phục; 12 phông cảnh SVG gốc, ánh đèn và hạt sáng. Không dùng hình ảnh của game khác.
+- **Màu thoại rõ ràng:** lời Hệ Thống màu xanh ngọc, ký ức màu tím, lời dẫn màu xám tím, các ký chủ có màu tên riêng.
+- **Lưu tự động** bằng localStorage, thư viện trích lục nguyên tác và nhật ký hội thoại.
+- **Responsive**, có bàn phím Space/Enter để đọc tiếp, 1–4 để chọn lời đáp khi hiện các lựa chọn.
 
-## Cấu trúc
+## File
 
-- index.html: bố cục responsive và khung visual novel.
-- styles.css: giao diện hệ thống màu tối, cảnh nền SVG phong cách pixel, layout mobile.
-- story.js: toàn bộ văn bản mở màn, ký chủ, lựa chọn, sự kiện ngày và trích lục nguyên tác.
-- app.js: trình xử lý hội thoại, lựa chọn, tài nguyên, nhiều ký chủ, sự kiện và lưu tiến trình.
+- index.html: khung visual novel
+- styles.css: giao diện pastel fantasy, bố cục điện ảnh, responsive
+- visuals.js: nhân vật chibi SVG theo biểu cảm và các cảnh nền SVG tự tạo
+- story.js: kịch bản theo sự kiện, ba tuyến và những nhánh giao thoa
+- app.js: visual novel engine, state machine, các lựa chọn, localStorage và nhật ký
 
-## Giới hạn của prototype
+## Giới hạn của demo
 
-Đây là bản demo có thể chơi, chưa phải game hoàn chỉnh. Chưa có toàn văn 1.286 chương tiểu thuyết, chỉ có trích lục phục vụ demo; chương tiếp theo sau Đại Hội chưa được viết. Nền và chân dung vẫn là đồ họa SVG dạng pixel tự vẽ bằng code, sẽ được thay bằng sprite/background pixel art chi tiết ở bản sau. Các hệ thống tu luyện, cửa hàng, nhiệm vụ, định tuyến cốt truyện và cân bằng chiến đấu cần mở rộng.
+Đây là chương mở đầu và các tuyến nhân vật mẫu, **chưa phải game hoàn chỉnh**. Thư viện nguyên tác chứa các trích lục cốt truyện (trong thế giới hư cấu hệ thống có đủ 1.286 chương); toàn bộ 1.286 chương chưa được viết. Đồ họa là SVG vẽ bằng code, chưa phải sprite sheet pixel art thủ công. Không có AI chat tự do, hệ thống chiến đấu hoặc cơ chế nuôi chỉ số.
 
-Nội dung hư cấu và minh họa của prototype là bản thảo, có thể chỉnh trực tiếp tại story.js.
-ver 0.2
+Bản v0.4 sử dụng khóa lưu tiến trình mới để không xung đột với các lần thử v0.1/v0.2. Tiến trình cũ không bị xóa nhưng không được nạp vào bản mới.
 
-## Cập nhật giao diện 0.2
+## Chạy cục bộ
 
-- Bố cục cinematic: thoại và cảnh chiếm trọng tâm, bảng thông số ẩn dưới nút Hệ thống.
-- Lời thoại Hệ Thống có nền xanh ngọc và chữ sáng riêng, ký ức màu tím, dẫn truyện màu xanh xám, nhân vật màu vàng ngà.
-- Hệ thống thực sự phát biểu lời người chơi đã chọn trước khi ký chủ trả lời.
-- Vì thay đổi cấu trúc khế ước, bản 0.2 dùng vùng lưu tiến trình mới. Bản lưu 0.1 không bị xóa nhưng sẽ không được nạp vào v0.2.
+Mở index.html bằng trình duyệt hiện đại; hoặc dùng một static server trong thư mục này, ví dụ python3 -m http.server 8000, rồi mở http://localhost:8000.
+
+## Kịch bản & mở rộng
+
+Mỗi cảnh trong story.js có ID, location/background, danh sách lines và choices. Ký chủ không đợi hệ thống giao nhiệm vụ; hành động của họ tạo ra các nút chuyện tiếp theo. Các ảnh SVG đều là thành phần code tự vẽ để dễ thay bằng sprite sheets sau này.
+
+Đây là bản nháp để tiếp tục chỉnh nội dung cùng người chơi.
