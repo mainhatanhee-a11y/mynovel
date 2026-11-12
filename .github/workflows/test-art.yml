@@ -14,17 +14,14 @@ jobs:
         run: |
           set -e
           python3 - <<'PY'
-          import os,requests
-          from PIL import Image
-          from io import BytesIO
+          import os,urllib.request,struct
           u=os.environ['ASSET_URL']
           v=u.replace('/height:112/','/height:720/').replace('/width:200','/width:1280').replace('x-canva-quality=thumbnail','x-canva-quality=original')
           for name,url in [('thumb',u),('full_modified',v)]:
             try:
-              r=requests.get(url,timeout=18)
-              print(name,'HTTP',r.status_code,'bytes',len(r.content),'content-type',r.headers.get('content-type'))
-              try:
-                im=Image.open(BytesIO(r.content));print(name,'dimensions',im.size)
-              except Exception as e:print(name,'noimage',str(e)[:120])
+              with urllib.request.urlopen(url,timeout=18) as r:
+                b=r.read()
+                print(name,'HTTP',r.status,'bytes',len(b),'content-type',r.headers.get('content-type'))
+                print(name,'png-size',struct.unpack('>II',b[16:24]) if b[:8]==b'\x89PNG\r\n\x1a\n' else 'not png')
             except Exception as e: print(name,'request error',str(e)[:120])
           PY
