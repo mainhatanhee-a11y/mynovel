@@ -38,3 +38,24 @@
 @media(max-width:580px){.app{padding:0 0 5px}.mast{padding:10px 13px;height:62px}.logo{height:35px;width:35px;border-radius:11px;font-size:23px}.logo-text strong{font-size:14px}.logo-text small{font-size:8px;letter-spacing:.04em}.tools{gap:3px}.tools button{padding:8px 10px;border-radius:11px}.tools .tool-text{display:none}.stage{height:calc(100svh - 106px);min-height:540px;max-height:none;border-radius:0;border-left:0;border-right:0;border-top-width:2px;border-bottom-width:2px}.stage:before{inset:6px;border-radius:0}.scene-hud{top:14px;left:15px;right:15px}.location .hud-icon{height:32px;width:32px;border-radius:10px;font-size:18px}.location small{font-size:8px;letter-spacing:.06em}.location strong{font-size:14px}.status{font-size:8px;letter-spacing:0;padding:7px 8px}.character{right:-1%;height:min(58%,370px);bottom:172px;width:48%}.character.left{left:-4%}.character.duo-left{left:-3%;height:min(48%,295px);width:48%;bottom:181px}.character.duo-right{right:-4%;height:min(48%,295px);width:48%;bottom:181px}.character .name-float{bottom:0;font-size:9px;padding:4px 8px}.dialogue-box{left:10px;right:10px;bottom:11px;min-height:190px;border-radius:15px;padding:17px 17px 12px}.speaker-name{font-size:16px}.dialogue-text{font-size:13px;line-height:1.9;min-height:71px}.dialogue-box[data-tone=narrator] .dialogue-text{font-size:14px}.dialogue-progress{font-size:9px}.tap-tip{font-size:8px;letter-spacing:0}.next-btn{font-size:10px}.scene-content{inset:70px 8px 106px}.overlay-card{padding:15px 13px;border-radius:16px}.overlay-card:has(.candidate-list){max-height:100%}.candidate-list{gap:6px;margin-top:11px}.candidate-sprite{height:100px}.candidate-sprite svg{height:99px;width:100%}.candidate-meta{padding:7px 6px;gap:4px}.candidate-meta strong{font-size:12px}.candidate-meta span{font-size:8px}.candidate-meta em{font-size:8px}.section-title{font-size:21px;margin:7px 0}.small-copy{font-size:11px;line-height:1.65}.choice-prompt{font-size:12px;margin:9px 0;padding:7px 10px}.overlay-actions{gap:6px;margin-top:11px}.choice-btn,.big-btn,.ghost-btn,.select-btn{padding:9px 11px;font-size:11px;line-height:1.5;min-height:42px;border-radius:10px}.choice-sub{font-size:9px}.cover-symbol{height:65px;width:65px;border-radius:19px;font-size:45px}.cover-card h1{font-size:34px;margin:10px 0}.cover-card p{font-size:12px;line-height:1.85}.profile-detail{padding:9px;margin-top:9px}.profile-detail strong{font-size:13px}.profile-detail p{font-size:10px;line-height:1.65;margin:3px 0}.split-actions{gap:7px;margin-top:10px}.footline{padding:8px 14px;font-size:8px}.footline>span{display:none}.modal{padding:9px}.modal-head{padding:17px}.modal-head h2{font-size:22px}.modal-body{padding:16px}.status-entry{padding:9px}.status-entry strong{font-size:13px}}
 @media(max-height:650px) and (min-width:600px){.stage{min-height:490px}.character{height:min(54%,380px);bottom:155px}.dialogue-box{min-height:158px;padding-top:13px}.dialogue-text{min-height:57px}.scene-content{inset:68px 15px 130px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+
+/* ORIGINAL GAME ART v0.5 — separate image layers, never draw characters into backgrounds. */
+.stage-art{overflow:hidden;background:#17192d}
+.stage-art .background-picture{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;transform:scale(1.025);animation:scene-zoom 13s ease-in-out infinite alternate;image-rendering:auto}
+.character-layer{isolation:isolate}
+.character{overflow:visible;filter:none;z-index:1}
+.character .character-cutout{display:block;object-fit:contain;object-position:center bottom;width:100%;height:100%;max-width:100%;image-rendering:auto;filter:drop-shadow(0 20px 16px #1513298c) drop-shadow(0 0 9px #f5e5cb48);animation:chibi-bob 3.3s ease-in-out infinite alternate}
+.character.duo-right .character-cutout{animation-delay:-1.4s}
+.character .name-float{z-index:2;bottom:-2px;background:#25223bcc}
+.candidate-sprite{background:radial-gradient(ellipse at 50% 78%,#eac3dc66,transparent 65%),linear-gradient(140deg,#666082,#2d2c48)}
+.candidate-sprite .character-cutout{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 9px 9px #100e2c75)}
+.mini-chibi .character-cutout{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom}
+.dialogue-box{z-index:12}
+.scene-content{z-index:13}
+.scene-hud{z-index:14;pointer-events:none}
+@media(max-width:580px){
+  .stage-art .background-picture{object-position:center center}
+  .candidate-sprite .character-cutout{height:100px}
+  .character .character-cutout{filter:drop-shadow(0 11px 12px #18132899)}
+}

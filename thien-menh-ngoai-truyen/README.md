@@ -1,4 +1,4 @@
-# Thiên Mệnh Ngoại Truyện ✦ Visual Novel Tu Chân — demo v0.4
+# Thiên Mệnh Ngoại Truyện ✦ Visual Novel Tu Chân — demo v0.5
 
 > Bạn là **Hệ Thống Bàn Tay Vàng** vừa thức tỉnh, biết toàn bộ nguyên tác 《Kiếm Vấn Trường Sinh》 nhưng không nhớ nhiệm vụ thực sự của mình. Thay vì điều khiển người khác như một game nuôi nhân vật, bạn đồng hành với những ký chủ có mục tiêu và suy nghĩ riêng.
 
@@ -46,3 +46,10 @@ Mở index.html bằng trình duyệt hiện đại; hoặc dùng một static s
 Mỗi cảnh trong story.js có ID, location/background, danh sách lines và choices. Ký chủ không đợi hệ thống giao nhiệm vụ; hành động của họ tạo ra các nút chuyện tiếp theo. Các ảnh SVG đều là thành phần code tự vẽ để dễ thay bằng sprite sheets sau này.
 
 Đây là bản nháp để tiếp tục chỉnh nội dung cùng người chơi.
+
+## Tích hợp hình ảnh v0.5
+
+- `assets/backgrounds/*.webp`: 12 phông nền đẹp đã duyệt, không chứa nhân vật; engine dùng đúng scene key (`void`, `stars`, `clouds`, `sect`, `archive`, `garden`, `market`, `inn`, `forest`, `tower`, `library`, `night`).
+- `assets/characters/*.webp`: Liễu Thanh Hòa (hai búi tóc), Mặc Từ, Tạ Vấn Sơn, ảnh nguyên bản đã xử lý alpha trong suốt, không hòa vào nền.
+- `visuals.js` cung cấp ảnh bằng thẻ `<img>`; `app.js` đặt background riêng và nhân vật ở `characterLayer` (phía trước, hộp thoại phía trên).
+- Lưu ý hiện ba nhân vật dùng **một pose chuẩn**; phần code vẫn nhớ trạng thái cảm xúc của thoại, nhưng biểu cảm đổi hình toàn phần cần thêm những ảnh được cắt thành frame riêng, không nên tưởng đã có đầy đủ pose.

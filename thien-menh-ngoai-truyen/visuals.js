@@ -1,5 +1,5 @@
-/* Original SVG environment & chibi-character illustration components.
-   All art generated locally in code; no copyrighted game assets or image hosts. */
+/* Scene graphics adapter: 12 original visual novel background files, 3 transparent character images.
+   Existing SVG fallback remains for Lục Chiêu Dã and unknown scenes. */
 (function(){
 const e=(x)=>String(x||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const stars=Array.from({length:33},(_,i)=>{const x=(i*179+71)%960,y=(i*83+43)%270,s=i%5===0?4:2;return '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="#fae8c0" opacity="'+(i%3===0?".72":".36")+'"/>';}).join("");
@@ -54,5 +54,17 @@ const brows=ex==="annoyed"?'<path d="M85 129l24 7M147 136l24-7" stroke="'+p.eye+
 const flip=side==="left"?' style="transform:scaleX(-1)"':"";
 return '<svg class="chibi"'+flip+' viewBox="0 0 260 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nhân vật chibi '+e(id)+'" shape-rendering="geometricPrecision"><defs><linearGradient id="robe-'+id+'" x1="0" x2="1" y1="0" y2="1"><stop stop-color="'+p.robe2+'"/><stop offset="1" stop-color="'+p.robe+'"/></linearGradient><linearGradient id="face-'+id+'" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff0df"/><stop offset="1" stop-color="'+p.skin+'"/></linearGradient></defs><ellipse cx="133" cy="362" rx="73" ry="12" fill="#090a17" opacity=".28"/><g stroke="#51445e" stroke-linejoin="round" stroke-linecap="round"><path d="M98 287v62h26l7-61M145 286l4 63h28v-63" fill="'+p.robe+'" stroke-width="6"/><path d="M93 343h38v13H88q-6-6 5-13ZM148 343h39v13h-43Z" fill="#4b4053" stroke-width="5"/><path d="M95 214q-18 10-30 42l-16 55q17 18 36 4l14-42M165 214q24 13 30 45l14 52q-17 18-38 4l-15-42" fill="'+p.robe+'" stroke-width="7"/><path d="M89 221Q102 205 130 207Q156 207 172 221L188 337Q132 358 73 337Z" fill="url(#robe-'+id+')" stroke-width="8"/><path d="M101 225l29 47l28-47l-9-12h-36Z" fill="'+p.trim+'" stroke-width="4"/><path d="M114 239l16 25l14-25" fill="none" stroke="'+p.robe2+'" stroke-width="10"/><path d="M129 268v72" stroke="'+p.trim+'" stroke-width="6"/><path d="M77 300q52 22 107 0" fill="none" stroke="'+p.trim+'" opacity=".7" stroke-width="5"/><path d="M85 320l23 9M150 332l22-10" stroke="#e3d2bc" opacity=".5" stroke-width="5"/><path d="M72 298q-13 11-21 7" stroke="'+p.skin+'" stroke-width="13"/><path d="M187 298q13 12 21 6" stroke="'+p.skin+'" stroke-width="13"/><rect x="120" y="196" width="20" height="30" rx="6" fill="'+p.skin+'" stroke-width="4"/><path d="M71 118q-4-70 60-74q64 5 61 74v66q-14 37-61 42q-52-7-60-47Z" fill="'+p.hair+'" stroke-width="7"/><rect x="65" y="128" width="18" height="40" rx="8" fill="'+p.skin+'" stroke-width="5"/><rect x="176" y="128" width="18" height="40" rx="8" fill="'+p.skin+'" stroke-width="5"/><path d="M77 111Q77 88 130 82Q179 82 181 113L185 159Q178 208 131 214Q80 208 75 159Z" fill="url(#face-'+id+')" stroke-width="7"/><path d="M75 127q8-18 35-27q31 25 70 15l-8-37Q120 54 88 79Z" fill="'+p.hair+'" stroke-width="4"/><path d="M87 96q54-34 92 4" stroke="'+p.hair2+'" stroke-width="12" fill="none"/>'+ornaments+'<ellipse cx="87" cy="172" rx="15" ry="7" fill="'+p.cheek+'" opacity=".62"/><ellipse cx="174" cy="172" rx="15" ry="7" fill="'+p.cheek+'" opacity=".62"/>'+brows+eyes+mouth+'</g><path d="M88 239l-10 66M172 239l15 67" stroke="#fff" stroke-width="3" opacity=".15"/><g fill="#fff" opacity=".45"><circle cx="40" cy="201" r="3"/><circle cx="207" cy="129" r="3"/><path d="M218 212l3 6l6 3l-6 3l-3 6l-3-6l-6-3l6-3Z"/></g></svg>';
 }
-window.NOVEL_ART={background:bg,chibi};
+// Asset pipeline v0.5: artwork is loaded from the repository, never embedded into a scene with characters.
+const imageScenes=new Set(["void","stars","clouds","sect","archive","garden","market","inn","forest","tower","library","night"]);
+function background(key){
+ if(!imageScenes.has(key))return bg(key);
+ return '<img class="background-picture" src="./assets/backgrounds/'+key+'.webp" alt="" decoding="async" draggable="false">';
+}
+function character(id,expression="soft",side="right"){
+ if(id==="luc")return chibi(id,expression,side);
+ if(!["lieu","mac","ta"].includes(id))return "";
+ // Each foreground file has real transparent alpha. Scene backgrounds contain no characters.
+ return '<img class="chibi character-cutout expression-'+e(expression)+'" src="./assets/characters/'+id+'.webp" alt="" decoding="async" draggable="false">';
+}
+window.NOVEL_ART={background:background,chibi:character};
 })();
