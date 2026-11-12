@@ -1,0 +1,30 @@
+name: Test art asset download
+on:
+  push:
+    paths:
+      - '.github/workflows/test-art.yml'
+  workflow_dispatch:
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download thumbnail and full-size variant
+        env:
+          ASSET_URL: 'https://media.canva.com/v2/image-resize/format:PNG/height:112/quality:100/uri:ifs%3A%2F%2FM%2F7280f3c8-15b5-4549-847b-830785194531/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAG1nzBn28PgQQPxr87ubQtuY0iz8Imcchzb4dqSJv9dk&exp=1794507165&osig=AAAAAAAAAAAAAAAAAAAAAO0Mo7V9A-vd7YTP07wYDMk9qasZcd71-BApzzeZWxV6&signer=media-rpc&token=AAIAAU0AJDcyODBmM2M4LTE1YjUtNDU0OS04NDdiLTgzMDc4NTE5NDUzMQAAAAABodD2TUhXOhUg-KgdOJEx7H27y-JwWrN0ZaXB8PZWySB2wLcB_Q&x-canva-quality=thumbnail'
+        run: |
+          set -e
+          python3 - <<'PY'
+          import os,requests
+          from PIL import Image
+          from io import BytesIO
+          u=os.environ['ASSET_URL']
+          v=u.replace('/height:112/','/height:720/').replace('/width:200','/width:1280').replace('x-canva-quality=thumbnail','x-canva-quality=original')
+          for name,url in [('thumb',u),('full_modified',v)]:
+            try:
+              r=requests.get(url,timeout=18)
+              print(name,'HTTP',r.status_code,'bytes',len(r.content),'content-type',r.headers.get('content-type'))
+              try:
+                im=Image.open(BytesIO(r.content));print(name,'dimensions',im.size)
+              except Exception as e:print(name,'noimage',str(e)[:120])
+            except Exception as e: print(name,'request error',str(e)[:120])
+          PY
