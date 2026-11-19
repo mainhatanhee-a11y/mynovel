@@ -425,7 +425,7 @@ window.FIN_MANGA = [
    ["Growing Perpetuity","PV=C1/(i−g), trong đó C1 là dòng tiền kỳ tới và i>g."],
    ["Deferred Annuity","Annuity bắt đầu sau một khoảng chờ; trước tiên tính PV tại thời điểm ngay trước khi dòng tiền bắt đầu rồi chiết khấu về hôm nay."],
    ["Amortized Loan","Khoản vay trả góp: mỗi kỳ thanh toán gồm interest và principal; dư nợ giảm dần theo lịch amortization." ]
-  ],formula:"PV_{perpetuity}=C/i\n\nPV_{growing}=C_1/(i-g),\quad i>g",warning:"Growing Perpetuity dùng C1 (dòng tiền kỳ tới), không phải C0. Nếu i ≤ g, mô hình không tạo ra PV hữu hạn hợp lý."},
+  ],formula:"PV_{perpetuity}=C/i\n\nPV_{growing}=C_1/(i-g),\\quad i>g",warning:"Growing Perpetuity dùng C1 (dòng tiền kỳ tới), không phải C0. Nếu i ≤ g, mô hình không tạo ra PV hữu hạn hợp lý."},
   {label:"Cảnh 3 · APR không phải luôn là lãi thật",bubbles:[
    ["Ngân hàng A","APR 12%, ghép lãi mỗi tháng!"],
    ["Ngân hàng B","APR 11,8%, ghép lãi mỗi quý!"],
@@ -538,7 +538,7 @@ window.FIN_MANGA = [
    ["Constant-Growth / Gordon Model","Dividend tăng đều g: P0 = D1/(R−g), với R>g."],
    ["Multi-Stage / Supernormal Growth","Một giai đoạn tăng trưởng cao/không đều, sau đó chuyển sang growth ổn định; định giá từng giai đoạn rồi chiết khấu."],
    ["Preferred Stock Valuation","Nếu trả preferred dividend cố định vô hạn, có thể định giá như perpetuity; nếu có maturity, thêm PV mệnh giá." ]
-  ],formula:"P_0=D_1/(R-g),\quad R>g\n\nD_1=D_0(1+g)",warning:"Nếu đề nói ‘just paid’ thì thường là D0; Gordon cần D1. Điều kiện R>g. Dùng growth trong giai đoạn cuối ổn định, không kéo growth siêu cao vĩnh viễn."},
+  ],formula:"P_0=D_1/(R-g),\\quad R>g\n\nD_1=D_0(1+g)",warning:"Nếu đề nói ‘just paid’ thì thường là D0; Gordon cần D1. Điều kiện R>g. Dùng growth trong giai đoạn cuối ổn định, không kéo growth siêu cao vĩnh viễn."},
   {label:"Cảnh 3 · Giá thị trường và giá trị hợp lý",bubbles:[
    ["Nhà đầu tư","Cổ phiếu đang giao dịch 50. Giá hợp lý cũng 50 chứ?"],
    ["Mèo Mướp","Không nhất thiết. Giá thị trường là mức giao dịch; intrinsic value là ước tính dựa trên dòng tiền và rủi ro."],
@@ -615,7 +615,7 @@ window.FIN_MANGA = [
    ["CapEx","Chi tiêu vốn mua/nâng cấp tài sản dài hạn. Là cash outflow ở thời điểm chi, không phải chỉ là depreciation hàng năm."],
    ["Net Working Capital (NWC)","Current Assets − Current Liabilities theo phạm vi hoạt động. Tăng NWC thường cần dùng tiền; thu hồi cuối dự án là cash inflow."],
    ["Free Cash Flow (FCF)","FCF = OCF − CapEx − ΔNWC. Đây là cash flow dùng cho NPV theo dự án trong khung đơn giản." ]
-  ],formula:"NOPAT=EBIT(1-T)\n\nOCF=NOPAT+D\&A\n\nFCF=OCF-CapEx-ΔNWC",warning:"CapEx không phải D&A. CapEx là khoản mua tài sản, thường cash outflow ngay; D&A là phân bổ kế toán theo năm và noncash trong kỳ."},
+  ],formula:"NOPAT=EBIT(1-T)\n\nOCF=NOPAT+D\\&A\n\nFCF=OCF-CapEx-ΔNWC",warning:"CapEx không phải D&A. CapEx là khoản mua tài sản, thường cash outflow ngay; D&A là phân bổ kế toán theo năm và noncash trong kỳ."},
   {label:"Cảnh 3 · Năm cuối và những cú trượt đề",bubbles:[
    ["Mèo Mướp","Đến năm cuối tôi bán máy lạnh, thu lại vốn lưu động. Có phải cứ ghi giá bán là xong?"],
    ["Cá Bống","Phải tính after-tax salvage value. Còn phải nhất quán giữa nominal CF với nominal rate, real CF với real rate."],
@@ -654,7 +654,7 @@ window.FIN_MANGA = [
    ["Economic Break-Even","Tìm Q khiến NPV dự án bằng 0, dùng toàn bộ cash flow sau thuế, CapEx, NWC, salvage và discount rate."],
    ["Degree of Operating Leverage (DOL)","Đo % thay đổi EBITDA hoặc EBIT khi doanh thu thay đổi 1%. Fixed costs cao thường làm lợi nhuận nhạy hơn."],
    ["Crossover Level","Sản lượng tại đó hai phương án có EBITDA/EBIT bằng nhau; phương án fixed cost cao, variable cost thấp có thể tốt hơn ở sản lượng cao." ]
-  ],formula:"Q_{cash}=FC/(P-v)\n\nQ_{accounting}=(FC+D\&A)/(P-v)\n\nDOL_{cash}=Q(P-v)/EBITDA\n\nDOL_{accounting}=Q(P-v)/EBIT",warning:"Cash break-even ≠ accounting break-even ≠ economic break-even. DOL có mẫu số EBITDA hoặc EBIT tùy đang đo độ nhạy tiền mặt hay kế toán."},
+  ],formula:"Q_{cash}=FC/(P-v)\n\nQ_{accounting}=(FC+D\\&A)/(P-v)\n\nDOL_{cash}=Q(P-v)/EBITDA\n\nDOL_{accounting}=Q(P-v)/EBIT",warning:"Cash break-even ≠ accounting break-even ≠ economic break-even. DOL có mẫu số EBITDA hoặc EBIT tùy đang đo độ nhạy tiền mặt hay kế toán."},
   {label:"Cảnh 3 · Đừng tin duy nhất một dự báo",bubbles:[
    ["Mèo Mướp","Giá cá thay đổi, tiền điện tăng, khách giảm. Tôi thử từng biến hay đổi cả bộ giả định?"],
    ["Cá Bống","Một biến: Sensitivity. Nhiều biến có liên quan: Scenario. Rất nhiều lần rút mẫu xác suất bằng máy tính: Simulation."],
